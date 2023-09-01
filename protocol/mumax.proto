@@ -1,0 +1,224 @@
+syntax = "proto3";
+
+package mumaxpy;
+
+option go_package = "github.com/will-henderson/mumaxpy/protocol";
+
+message NULL{    
+}
+
+message STRING {
+    string s = 1;
+}
+
+message STRINGs {
+    repeated string s = 1;
+}
+
+message BOOL {
+    bool s = 1;
+}
+
+message BOOLs {
+    repeated bool s = 1;
+}
+
+message INT {
+    int64 s = 1;
+}
+
+message INTs{
+    repeated int64 s = 1;
+}
+
+message DOUBLE {
+    double s = 1;
+}
+
+message DOUBLEs{
+    repeated double s = 1;
+}
+
+message Function {
+    repeated string argtypes = 1;
+    repeated string argnames = 2;
+    repeated string outtypes = 3;
+}
+
+message LValue {
+    string type = 1;
+    string inputtype = 2;
+}
+
+message ROnly {
+    string type = 1;
+}
+
+message Identifier {
+    string name = 1;
+    string doc = 2;
+    oneof props {
+        LValue l = 3;
+        ROnly r = 4;
+        Function f = 5;
+    }
+}
+
+message MumaxObject{
+    oneof identity {
+        string name = 1;
+        uint32 ptr = 2;
+    }
+}
+
+message MumaxObjects{
+    repeated MumaxObject s = 1;
+}
+
+message FunctionCall {
+    string name = 1;
+    repeated string argString = 2;
+    repeated bool argBool = 3;
+    repeated double argDouble = 4;
+    repeated int64 argInt = 5; 
+    repeated MumaxObject argMumax = 6;
+    repeated ScalarFunction argScalarFunction = 7;
+    repeated VectorFunction argVectorFunction = 8; 
+}
+
+message Array{
+    oneof elements{
+        INTs i = 1;
+        BOOLs b = 2;
+        STRINGs s = 3;
+        DOUBLEs d = 4;
+        MumaxObjects o = 5;
+        Arrays a = 6;
+    }
+}
+
+message Arrays{
+    repeated Array s = 1;
+}
+
+message CallResponse {
+    repeated string outString = 2;
+    repeated bool outBool = 3;
+    repeated double outDouble = 4;
+    repeated int64 outInt = 5; 
+    repeated MumaxObject outMumax = 6;
+    repeated Array outArray = 7;
+}
+
+message MethodCall{
+    MumaxObject mmobj = 1;
+    FunctionCall fc = 2;
+}
+
+message MumaxField{
+    MumaxObject mmobj = 1;
+    string fieldName = 2;
+}
+
+message BoolSet{
+    MumaxObject mmobj = 1;
+    bool s = 2;
+}
+
+message IntSet{
+    MumaxObject mmobj = 1;
+    int64 s = 2;
+}
+
+message DoubleSet{
+    MumaxObject mmobj = 1;
+    double s = 2;
+}
+
+message StringSet{
+    MumaxObject mmobj = 1;
+    string s = 2;
+}
+
+message VectorSet{
+    MumaxObject mmobj = 1;
+    double x = 2;
+    double y = 3;
+    double z = 4;
+}
+
+message ScalarFunction{
+    oneof sf{
+        double scalar = 2;
+        string gocode = 3;
+    } 
+}
+
+message ScalarFunctionSet{
+    MumaxObject mmobj = 1;
+    ScalarFunction s = 2;
+}
+
+message ScalarFunction3{
+    ScalarFunction x = 1;
+    ScalarFunction y = 2;
+    ScalarFunction z = 3;
+}
+
+message VectorFunction{
+    oneof vf {
+        string gocode = 1;
+        ScalarFunction3 components = 2;
+    }
+}
+
+message VectorFunctionSet{
+    MumaxObject mmobj = 1;
+    VectorFunction s = 2;
+}
+
+message MumaxSet{
+    MumaxObject mmobj = 1;
+    MumaxObject s = 2;
+}
+
+message Slice{
+    int64 ncomp = 1;
+    int64 nx = 2;
+    int64 ny = 3;
+    int64 nz = 4;
+    string file = 5; 
+}
+
+
+service mumax {
+    rpc Eval(STRING) returns (NULL) {}
+    rpc GetIdentifiers(NULL) returns (stream Identifier) {}
+    rpc GetTypeInfo(STRING) returns (stream Identifier) {}
+    rpc Call(FunctionCall) returns (CallResponse) {}
+    rpc CallMethod(MethodCall) returns (CallResponse) {}
+
+    rpc GetBool(MumaxObject) returns (BOOL) {}
+    rpc GetInt(MumaxObject) returns (INT) {}
+    rpc GetString(MumaxObject) returns (STRING) {}
+    rpc GetDouble(MumaxObject) returns (DOUBLE) {}
+
+    rpc SetBool(BoolSet) returns (NULL) {}
+    rpc SetInt(IntSet) returns (NULL) {}
+    rpc SetDouble(DoubleSet) returns (NULL) {}
+    rpc SetString(StringSet) returns (NULL) {}
+    rpc SetVector(VectorSet) returns (NULL) {}
+    rpc SetScalarFunction(ScalarFunctionSet) returns (NULL) {}
+    rpc SetVectorFunction(VectorFunctionSet) returns (NULL) {}
+    rpc SetMumax(MumaxSet) returns (NULL) {}
+
+    rpc GetFieldBool(MumaxField) returns (BOOL) {}
+    rpc GetFieldInt(MumaxField) returns (INT) {}
+    rpc GetFieldString(MumaxField) returns (STRING) {}
+    rpc GetFieldDouble(MumaxField) returns (DOUBLE) {}
+    rpc GetFieldMumax(MumaxField) returns (MumaxObject) {}
+
+    rpc DestroyMumax(MumaxObject) returns (NULL) {}
+
+    rpc NewSlice(Slice) returns (MumaxObject) {}
+}
