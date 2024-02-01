@@ -11,7 +11,7 @@ setuptools.setup(
         'numpy',
         'grpcio',
         'grpcio-tools',
-        'discretisedfield'
+        'ubermag'
     ],
     py_modules=["mumaxpy"],
     package_dir={'':'.'},
