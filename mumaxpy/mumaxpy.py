@@ -21,7 +21,7 @@ class Mumax:
 
     def __init__(self, o=None, **kwargs):
 
-        serverpath = os.path.join("installing_stuff", "mumaxpy-server")
+        serverpath = os.path.join("/installing_stuff", "mumaxpy-server")
         args = [serverpath]
         if o is None:
             o = os.path.join(os.getcwd(), "mumax.out")
