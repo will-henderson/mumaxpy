@@ -86,13 +86,24 @@ func (e *mumax) GetTypeInfo(in *pb.STRING, stream pb.Mumax_GetTypeInfoServer) er
 	if t.Kind() == reflect.Struct {
 		for i := 0; i < t.NumField(); i++ {
 			field := t.Field(i)
+
 			if field.IsExported() {
-				err := sendFieldIdentifier(field, stream)
-				if err != nil {
-					return err
+				if !field.Anonymous {
+					err := sendFieldIdentifier(field, stream)
+					if err != nil {
+						return err
+					}
 				}
 			}
+
 		}
+
+		/* JUST IGNORE SUCH CONSIDERATIONS FOR NOW
+		visfields := reflect.VisibleFields(t)
+		for vf := range visfields {
+			fmt.Printf("%#v", vf)
+		}
+		*/
 	}
 
 	return nil

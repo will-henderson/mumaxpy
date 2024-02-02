@@ -45,11 +45,12 @@ def docComment(doc, argnames, argtypes):
 
     s = "    '''\n" 
     s += "    " + doc + "\n"
-    s += "    Parameters:\n"
-    for argname, argtype in zip(argnames, argtypes):
-        s += "        " + argname + " (" + argtype + "):\n"
-    s += "    '''\n"
+    if (len(argnames) > 0):
+        s += "    Parameters:\n"
+        for argname, argtype in zip(argnames, argtypes):
+            s += "        " + argname + " (" + argtype + ")\n"
 
+    s += "    '''\n"
     return s
 
 def returnLine(outtypes, isMM):
@@ -214,15 +215,15 @@ def fieldString(name, ftype, doc):
 
     match ftype:
         case "int":
-            getstring += "    res = self.stub.GetFieldInt(req).s\n"
+            getstring += "    res = self.master.stub.GetFieldInt(req).s\n"
         case "bool":
-            getstring += "    res = self.stub.GetFieldBool(req).s\n"
+            getstring += "    res = self.master.stub.GetFieldBool(req).s\n"
         case "string":
-            getstring += "    res = self.stub.GetFieldString(req).s\n"
+            getstring += "    res = self.master.stub.GetFieldString(req).s\n"
         case "float32" | "float64":
-            getstring += "    res = self.stub.GetFieldDouble(req).s\n"
+            getstring += "    res = self.master.stub.GetFieldDouble(req).s\n"
         case _:
-            getstring += "    res = toObj(self.stub.GetFieldMumax(req), '" + ftype + "', self)\n"
+            getstring += "    res = toObj(self.master.stub.GetFieldMumax(req), '" + ftype + "', self.master)\n"
 
     
     getstring += "    return res\n"

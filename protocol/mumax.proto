@@ -187,8 +187,21 @@ message Slice{
     int64 nx = 2;
     int64 ny = 3;
     int64 nz = 4;
-    string file = 5; 
+    string file = 5;
 }
+
+message GPUSliceRequest{
+    int64 ncomp = 1;
+    int64 nx = 2;
+    int64 ny = 3;
+    int64 nz = 4;
+}
+
+message GPUSlice{
+    MumaxObject mmobj = 1;
+    repeated bytes handle = 2;
+}
+
 
 
 service mumax {
@@ -221,4 +234,5 @@ service mumax {
     rpc DestroyMumax(MumaxObject) returns (NULL) {}
 
     rpc NewSlice(Slice) returns (MumaxObject) {}
+    rpc NewGPUSlice(GPUSliceRequest) returns (GPUSlice) {}
 }
