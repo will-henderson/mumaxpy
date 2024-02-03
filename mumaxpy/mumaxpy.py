@@ -15,6 +15,7 @@ import multiprocessing.shared_memory as shm
 from inspect import signature
 
 from . import funcstrings
+from . import revcom
 
 
 socket_address = "mumaxpy.sock"
@@ -97,7 +98,7 @@ class Mumax:
     def __exit__(self):
         self.close()
 
-    def close(self):
+    def close(self, signal=None, frame=None):
         
         self.server.send_signal(signal.SIGINT)
         self.channel.close()
@@ -238,32 +239,45 @@ def _makeScalarFunction(value, master):
     except:
         if isinstance(value, str):
             return mumax_pb2.ScalarFunction(gocode=value)
+        
         elif callable(value): #this would be the python call
             signat = signature(value)
             if len(signat.parameters) == 0:
                 master.scalarpyfuncs.append(value)
             elif len(signat.parameters) == 1:
-                master.scalarpyfuncs.append(lambda: value(mm.T))
+                master.scalarpyfuncs.append(lambda: value(master.t))
             else:
                 raise TypeError("Python function must have either one or no arguments")
+            
+            return mumax_pb2.ScalarFunction(pyfunc=len(master.scalarpyfuncs) - 1)
+        
         else:
             raise TypeError("Scalar Function argument must either be a float, a string representing go code or a python function")
         
-def _makeScalarFunction3(value):
+def _makeScalarFunction3(value, master):
     try:
         l = list(value)
-        if len(l) != 3: raise TypeError("Gocode or list of length 3")
-        return mumax_pb2.ScalarFunction3(x = _makeScalarFunction(l[0]),
-                                         y = _makeScalarFunction(l[1]), 
-                                         z = _makeScalarFunction(l[2]))
+        if len(l) != 3: raise TypeError("Gocode, Python Function or list of length 3 of these things")
+        return mumax_pb2.ScalarFunction3(x = _makeScalarFunction(l[0], master),
+                                         y = _makeScalarFunction(l[1], master), 
+                                         z = _makeScalarFunction(l[2], master))
     except:
-        raise TypeError("Gocode or list of length 3")
+        raise TypeError("Gocode, Python Function or list of length 3 of these things")
     
-def _makeVectorFunction(value):
+def _makeVectorFunction(value, master):
     if isinstance(value, str):
          return mumax_pb2.VectorFunction(gocode=value)
+    elif callable(value):
+        signat = signature(value)
+        if len(signat.parameters) == 0:
+            master.vectorpyfuncs.append(value)
+        elif len(signat.parameters) == 1:
+            master.vectorpyfuncs.append(lambda: value(master.t))
+        else:
+            raise TypeError("Python function must have either one or no arguments")
+        return mumax_pb2.VectorFunction(pyfunc=len(master.scalarpyfuncs) - 1)
     else:
-        return mumax_pb2.VectorFunction(components=_makeScalarFunction3(value))
+        return mumax_pb2.VectorFunction(components=_makeScalarFunction3(value, master))
 
 def _processArray(arr):
     which = arr.WhichOneof('elements')

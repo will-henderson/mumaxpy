@@ -28,7 +28,7 @@ def functionCall(name, argnames, argtypes, isMM):
             case "script.ScalarFunction":
                 argScalarFunction.append("_makeScalarFunction(" + argname + ", " + master + ")")
             case "script.VectorFunction":
-                argVectorFunction.append("_makeVectorFunction(" + argname +")")
+                argVectorFunction.append("_makeVectorFunction(" + argname + ", " + master + ")")
 
             case _: #need to preprocess these!!
                 argMumax.append("_pam(" + argname + ")") 
@@ -160,10 +160,10 @@ def lValueSetString(name, intype):
             setstring += "    res = self.stub.SetVector(mumax_pb2.VectorSet(mmobj=identifier, x=value[0], y=value[1], z=value[2]))\n"
 
         case "script.ScalarFunction":
-            setstring += "    self.stub.SetScalarFunction(mumax_pb2.ScalarFunctionSet(mmobj=identifier, s=_makeScalarFunction(value)))\n"
+            setstring += "    self.stub.SetScalarFunction(mumax_pb2.ScalarFunctionSet(mmobj=identifier, s=_makeScalarFunction(value, self)))\n"
 
         case "script.VectorFunction":
-            setstring += "    self.stub.SetVectorFunction(mumax_pb2.VectorFunctionSet(mmobj=identifier, s=_makeVectorFunction(value)))\n"
+            setstring += "    self.stub.SetVectorFunction(mumax_pb2.VectorFunctionSet(mmobj=identifier, s=_makeVectorFunction(value, self)))\n"
 
         case _: 
             setstring += "    if not hasattr(value, 'identifier'): raise TypeError('The value should be a mumax object here.')\n"

@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"reflect"
+	"fmt"
 
 	"github.com/mumax/3/data"
 	en "github.com/mumax/3/engine"
@@ -37,6 +38,7 @@ func processScalarFunction(s *pb.ScalarFunction) (script.ScalarFunction, error) 
 	case *pb.ScalarFunction_Pyfunc:
 		func_no := len(ScalarFunctionResults)
 		ScalarFunctionResults = append(ScalarFunctionResults, make(chan float64))
+		fmt.Println("MADE A SCALAR PYFUNC")
 		return &py_sf{func_no}, nil
 	}
 	return nil, nil //don't get to this line
@@ -50,6 +52,10 @@ func processVectorFunction(v *pb.VectorFunction) (script.VectorFunction, error) 
 			return nil, err
 		}
 		return &go_vf{expr}, nil
+	case *pb.VectorFunction_Pyfunc:
+		func_no := len(VectorFunctionResults)
+		VectorFunctionResults = append(VectorFunctionResults, make(chan float64))
+		return &py_vf{expr}
 	case *pb.VectorFunction_Components:
 		sf3 := value.Components
 		var intercomp [3]script.ScalarFunction
@@ -100,6 +106,7 @@ type py_sf struct {
 }
 
 func (c *py_sf) Eval() interface{} {
+	fmt.Println("EVALUATING")
 	ScalarFunctionRequest <- c.func_no
 	return <-ScalarFunctionResults[c.func_no]
 }

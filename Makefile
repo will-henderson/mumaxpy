@@ -8,4 +8,5 @@ CGO_CFLAGS_ALLOW='(-fno-schedule-insns|-malign-double|-ffast-math)'
 
 
 all: 
+	python3.11 -m pip install .
 	go install -v $(GO_BUILDFLAGS) github.com/will-henderson/mumaxpy/...

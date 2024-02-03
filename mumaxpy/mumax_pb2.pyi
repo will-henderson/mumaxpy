@@ -282,12 +282,14 @@ class ScalarFunction3(_message.Message):
     def __init__(self, x: _Optional[_Union[ScalarFunction, _Mapping]] = ..., y: _Optional[_Union[ScalarFunction, _Mapping]] = ..., z: _Optional[_Union[ScalarFunction, _Mapping]] = ...) -> None: ...
 
 class VectorFunction(_message.Message):
-    __slots__ = ("gocode", "components")
+    __slots__ = ("gocode", "components", "pyfunc")
     GOCODE_FIELD_NUMBER: _ClassVar[int]
     COMPONENTS_FIELD_NUMBER: _ClassVar[int]
+    PYFUNC_FIELD_NUMBER: _ClassVar[int]
     gocode: str
     components: ScalarFunction3
-    def __init__(self, gocode: _Optional[str] = ..., components: _Optional[_Union[ScalarFunction3, _Mapping]] = ...) -> None: ...
+    pyfunc: int
+    def __init__(self, gocode: _Optional[str] = ..., components: _Optional[_Union[ScalarFunction3, _Mapping]] = ..., pyfunc: _Optional[int] = ...) -> None: ...
 
 class VectorFunctionSet(_message.Message):
     __slots__ = ("mmobj", "s")

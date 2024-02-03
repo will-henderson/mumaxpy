@@ -190,6 +190,7 @@ message VectorFunction{
     oneof vf {
         string gocode = 1;
         ScalarFunction3 components = 2;
+        int64 pyfunc =3;
     }
 }
 

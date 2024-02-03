@@ -14,7 +14,11 @@ class RevComHandler():
     
     def handler(self):
         for request in self.requests:
-            yield self.pyfuncs[request]()
+            match request.WhichOneof("pyfunc"):
+                case "scalarpyfunc":
+                    yield self.pyfuncs[request.scalarpyfunc]()
+                case "vectorpyfunc":
+                    yield self.pyfuncs[request.vectorpyfunc]()
 
 async def revcomStreaming(pyfuncs, stub):
     revComHandler = RevComHandler(pyfuncs, stub)
@@ -22,7 +26,7 @@ async def revcomStreaming(pyfuncs, stub):
 async def Call(fc, master):
     call_task = asyncio.create_task(functionCall(fc, master.stub))
 
-    if master.pyfuncs:
+    if master.scalarpyfuncs or master.vectorpyfuncs:
         revcom_task = asyncio.create_task(revcomStreaming(master.pyfuncs, master.stub))
         result = await call_task
         revcom_task.cancel()
