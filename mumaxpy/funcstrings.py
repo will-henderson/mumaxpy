@@ -100,7 +100,7 @@ def functionString(name, argnames, argtypes, outtypes, doc):
     s  = "def f(self, " +  ", ".join(argnames) + "):\n" 
     s += docComment(doc, argnames, argtypes)
     s += functionCall(name.lower(), argnames, argtypes)
-    s += "    reply = self.stub.Call(fc) \n"
+    s += "    reply = asyncio.run(revcom.Call(fc, self)) \n"
     s += returnLine(outtypes, True)
     s += "self." + name + " = f.__get__(self)"  
     return s

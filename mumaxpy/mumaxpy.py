@@ -6,6 +6,7 @@ import grpc
 from . import mumax_pb2
 from . import mumax_pb2_grpc
 import os 
+import asyncio
 import time
 import numpy as np
 import discretisedfield as df
