@@ -2,7 +2,7 @@
 """Client and server classes corresponding to protobuf-defined services."""
 import grpc
 
-import mumaxpy.mumax_pb2 as mumax__pb2
+from . import mumax_pb2 as mumax__pb2
 
 
 class mumaxStub(object):
@@ -38,6 +38,11 @@ class mumaxStub(object):
                 '/mumaxpy.mumax/CallMethod',
                 request_serializer=mumax__pb2.MethodCall.SerializeToString,
                 response_deserializer=mumax__pb2.CallResponse.FromString,
+                )
+        self.ReverseCommunication = channel.stream_stream(
+                '/mumaxpy.mumax/ReverseCommunication',
+                request_serializer=mumax__pb2.RevComResult.SerializeToString,
+                response_deserializer=mumax__pb2.RevComRequest.FromString,
                 )
         self.GetBool = channel.unary_unary(
                 '/mumaxpy.mumax/GetBool',
@@ -134,6 +139,11 @@ class mumaxStub(object):
                 request_serializer=mumax__pb2.Slice.SerializeToString,
                 response_deserializer=mumax__pb2.MumaxObject.FromString,
                 )
+        self.NewGPUSlice = channel.unary_unary(
+                '/mumaxpy.mumax/NewGPUSlice',
+                request_serializer=mumax__pb2.GPUSliceRequest.SerializeToString,
+                response_deserializer=mumax__pb2.GPUSlice.FromString,
+                )
 
 
 class mumaxServicer(object):
@@ -164,6 +174,12 @@ class mumaxServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def CallMethod(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ReverseCommunication(self, request_iterator, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -283,6 +299,12 @@ class mumaxServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def NewGPUSlice(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_mumaxServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -310,6 +332,11 @@ def add_mumaxServicer_to_server(servicer, server):
                     servicer.CallMethod,
                     request_deserializer=mumax__pb2.MethodCall.FromString,
                     response_serializer=mumax__pb2.CallResponse.SerializeToString,
+            ),
+            'ReverseCommunication': grpc.stream_stream_rpc_method_handler(
+                    servicer.ReverseCommunication,
+                    request_deserializer=mumax__pb2.RevComResult.FromString,
+                    response_serializer=mumax__pb2.RevComRequest.SerializeToString,
             ),
             'GetBool': grpc.unary_unary_rpc_method_handler(
                     servicer.GetBool,
@@ -406,6 +433,11 @@ def add_mumaxServicer_to_server(servicer, server):
                     request_deserializer=mumax__pb2.Slice.FromString,
                     response_serializer=mumax__pb2.MumaxObject.SerializeToString,
             ),
+            'NewGPUSlice': grpc.unary_unary_rpc_method_handler(
+                    servicer.NewGPUSlice,
+                    request_deserializer=mumax__pb2.GPUSliceRequest.FromString,
+                    response_serializer=mumax__pb2.GPUSlice.SerializeToString,
+            ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
             'mumaxpy.mumax', rpc_method_handlers)
@@ -498,6 +530,23 @@ class mumax(object):
         return grpc.experimental.unary_unary(request, target, '/mumaxpy.mumax/CallMethod',
             mumax__pb2.MethodCall.SerializeToString,
             mumax__pb2.CallResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def ReverseCommunication(request_iterator,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.stream_stream(request_iterator, target, '/mumaxpy.mumax/ReverseCommunication',
+            mumax__pb2.RevComResult.SerializeToString,
+            mumax__pb2.RevComRequest.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
@@ -821,5 +870,22 @@ class mumax(object):
         return grpc.experimental.unary_unary(request, target, '/mumaxpy.mumax/NewSlice',
             mumax__pb2.Slice.SerializeToString,
             mumax__pb2.MumaxObject.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def NewGPUSlice(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/mumaxpy.mumax/NewGPUSlice',
+            mumax__pb2.GPUSliceRequest.SerializeToString,
+            mumax__pb2.GPUSlice.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

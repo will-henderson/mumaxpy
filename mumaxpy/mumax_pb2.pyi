@@ -167,6 +167,32 @@ class CallResponse(_message.Message):
     outArray: _containers.RepeatedCompositeFieldContainer[Array]
     def __init__(self, outString: _Optional[_Iterable[str]] = ..., outBool: _Optional[_Iterable[bool]] = ..., outDouble: _Optional[_Iterable[float]] = ..., outInt: _Optional[_Iterable[int]] = ..., outMumax: _Optional[_Iterable[_Union[MumaxObject, _Mapping]]] = ..., outArray: _Optional[_Iterable[_Union[Array, _Mapping]]] = ...) -> None: ...
 
+class RevComRequest(_message.Message):
+    __slots__ = ("scalarpyfunc", "vectorpyfunc")
+    SCALARPYFUNC_FIELD_NUMBER: _ClassVar[int]
+    VECTORPYFUNC_FIELD_NUMBER: _ClassVar[int]
+    scalarpyfunc: int
+    vectorpyfunc: int
+    def __init__(self, scalarpyfunc: _Optional[int] = ..., vectorpyfunc: _Optional[int] = ...) -> None: ...
+
+class Vector(_message.Message):
+    __slots__ = ("x", "y", "z")
+    X_FIELD_NUMBER: _ClassVar[int]
+    Y_FIELD_NUMBER: _ClassVar[int]
+    Z_FIELD_NUMBER: _ClassVar[int]
+    x: float
+    y: float
+    z: float
+    def __init__(self, x: _Optional[float] = ..., y: _Optional[float] = ..., z: _Optional[float] = ...) -> None: ...
+
+class RevComResult(_message.Message):
+    __slots__ = ("scalar", "vec")
+    SCALAR_FIELD_NUMBER: _ClassVar[int]
+    VEC_FIELD_NUMBER: _ClassVar[int]
+    scalar: float
+    vec: Vector
+    def __init__(self, scalar: _Optional[float] = ..., vec: _Optional[_Union[Vector, _Mapping]] = ...) -> None: ...
+
 class MethodCall(_message.Message):
     __slots__ = ("mmobj", "fc")
     MMOBJ_FIELD_NUMBER: _ClassVar[int]
@@ -228,12 +254,14 @@ class VectorSet(_message.Message):
     def __init__(self, mmobj: _Optional[_Union[MumaxObject, _Mapping]] = ..., x: _Optional[float] = ..., y: _Optional[float] = ..., z: _Optional[float] = ...) -> None: ...
 
 class ScalarFunction(_message.Message):
-    __slots__ = ("scalar", "gocode")
+    __slots__ = ("scalar", "gocode", "pyfunc")
     SCALAR_FIELD_NUMBER: _ClassVar[int]
     GOCODE_FIELD_NUMBER: _ClassVar[int]
+    PYFUNC_FIELD_NUMBER: _ClassVar[int]
     scalar: float
     gocode: str
-    def __init__(self, scalar: _Optional[float] = ..., gocode: _Optional[str] = ...) -> None: ...
+    pyfunc: int
+    def __init__(self, scalar: _Optional[float] = ..., gocode: _Optional[str] = ..., pyfunc: _Optional[int] = ...) -> None: ...
 
 class ScalarFunctionSet(_message.Message):
     __slots__ = ("mmobj", "s")
@@ -290,3 +318,23 @@ class Slice(_message.Message):
     nz: int
     file: str
     def __init__(self, ncomp: _Optional[int] = ..., nx: _Optional[int] = ..., ny: _Optional[int] = ..., nz: _Optional[int] = ..., file: _Optional[str] = ...) -> None: ...
+
+class GPUSliceRequest(_message.Message):
+    __slots__ = ("ncomp", "nx", "ny", "nz")
+    NCOMP_FIELD_NUMBER: _ClassVar[int]
+    NX_FIELD_NUMBER: _ClassVar[int]
+    NY_FIELD_NUMBER: _ClassVar[int]
+    NZ_FIELD_NUMBER: _ClassVar[int]
+    ncomp: int
+    nx: int
+    ny: int
+    nz: int
+    def __init__(self, ncomp: _Optional[int] = ..., nx: _Optional[int] = ..., ny: _Optional[int] = ..., nz: _Optional[int] = ...) -> None: ...
+
+class GPUSlice(_message.Message):
+    __slots__ = ("mmobj", "handle")
+    MMOBJ_FIELD_NUMBER: _ClassVar[int]
+    HANDLE_FIELD_NUMBER: _ClassVar[int]
+    mmobj: MumaxObject
+    handle: _containers.RepeatedScalarFieldContainer[bytes]
+    def __init__(self, mmobj: _Optional[_Union[MumaxObject, _Mapping]] = ..., handle: _Optional[_Iterable[bytes]] = ...) -> None: ...

@@ -1,4 +1,10 @@
-def functionCall(name, argnames, argtypes):
+def functionCall(name, argnames, argtypes, isMM):
+
+    if isMM:
+        master = 'self'
+    else:
+        master = 'self.master'
+
     argString = []
     argInt = []
     argBool = []
@@ -20,7 +26,7 @@ def functionCall(name, argnames, argtypes):
             case "data.Vector":
                 argDouble.append(", ".join([argname + "[" + str(i) + "]" for i in range(3)] ))  
             case "script.ScalarFunction":
-                argScalarFunction.append("_makeScalarFunction(" + argname +")")
+                argScalarFunction.append("_makeScalarFunction(" + argname + ", " + master + ")")
             case "script.VectorFunction":
                 argVectorFunction.append("_makeVectorFunction(" + argname +")")
 
@@ -54,6 +60,11 @@ def docComment(doc, argnames, argtypes):
 
 def returnLine(outtypes, isMM):
 
+    if isMM:
+        master = 'self'
+    else:
+        master = 'self.master'
+
     out = []
     nOutString = 0
     nOutBool = 0
@@ -85,10 +96,7 @@ def returnLine(outtypes, isMM):
                     nOutDouble += 3 
 
                 case _:
-                    if isMM:
-                        out.append("toObj(reply.outMumax[" + str(nOutMumax) + "], '" + outtype + "', self)")
-                    else:
-                        out.append("toObj(reply.outMumax[" + str(nOutMumax) + "], '" + outtype + "', self.master)")
+                    out.append("toObj(reply.outMumax[" + str(nOutMumax) + "], '" + outtype + "', " + master + ")")
                     nOutMumax += 1    
 
     s = "    return " + ", ".join(out) + "\n"
@@ -99,7 +107,7 @@ def functionString(name, argnames, argtypes, outtypes, doc):
 
     s  = "def f(self, " +  ", ".join(argnames) + "):\n" 
     s += docComment(doc, argnames, argtypes)
-    s += functionCall(name.lower(), argnames, argtypes)
+    s += functionCall(name.lower(), argnames, argtypes, True)
     s += "    reply = asyncio.run(revcom.Call(fc, self)) \n"
     s += returnLine(outtypes, True)
     s += "self." + name + " = f.__get__(self)"  
@@ -110,7 +118,7 @@ def methodString(mthname, argnames, argtypes, outtypes, doc):
 
     s  = "def f(self, " +  ", ".join(argnames) + "):\n" 
     s += docComment(doc, argnames, argtypes)
-    s += functionCall(mthname, argnames, argtypes)
+    s += functionCall(mthname, argnames, argtypes, False)
     s += "    mthcall = mumax_pb2.MethodCall(mmobj=self.identifier, fc=fc)\n" 
     s += "    reply = self.master.stub.CallMethod(mthcall) \n"
     s += returnLine(outtypes, False)

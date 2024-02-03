@@ -34,21 +34,33 @@ func RevComReceiver(stream pb.Mumax_ReverseCommunicationServer) error {
 	}
 }
 
-func RevComRequester(stream pb.Mumax_ReverseCommunicationServer, funcrequest chan int) error {
+func ScalarRevComRequester(stream pb.Mumax_ReverseCommunicationServer) error {
 	for {
-		request := <-funcrequest
+		request := <-ScalarFunctionRequest
 		if request == -1 {
 			return nil
 		}
-		stream.Send(&pb.RevComRequest{Pyfunc: int64(request)})
+		stream.Send(&pb.RevComRequest{Pyfunc: &pb.RevComRequest_Scalarpyfunc{Scalarpyfunc: int64(request)}})
+
+		RevComRequests <- request
+	}
+}
+
+func VectorRevComRequester(stream pb.Mumax_ReverseCommunicationServer) error {
+	for {
+		request := <-VectorFunctionRequest
+		if request == -1 {
+			return nil
+		}
+		stream.Send(&pb.RevComRequest{Pyfunc: &pb.RevComRequest_Vectorpyfunc{Vectorpyfunc: int64(request)}})
 		RevComRequests <- request
 	}
 }
 
 func (e *mumax) ReverseCommunication(stream pb.Mumax_ReverseCommunicationServer) error {
 
-	go RevComRequester(stream, ScalarFunctionRequest)
-	go RevComRequester(stream, VectorFunctionRequest)
+	go ScalarRevComRequester(stream)
+	go VectorRevComRequester(stream)
 	err := RevComReceiver(stream)
 	return err
 }

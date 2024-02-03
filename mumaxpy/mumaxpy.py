@@ -12,6 +12,7 @@ import numpy as np
 import discretisedfield as df
 import mmap
 import multiprocessing.shared_memory as shm
+from inspect import signature
 
 from . import funcstrings
 
@@ -51,6 +52,9 @@ class Mumax:
 
         self.typelist = dict()
         self._populate_functions()
+
+        self.scalarpyfuncs = []
+        self.vectorpyfuncs = []
 
     def _populate_functions(self):
 
@@ -227,17 +231,23 @@ class DiscretisedFieldMM(df.Field):
 def _pam(mmobj):
     return mmobj.identifier
 
-def _makeScalarFunction(value):
+def _makeScalarFunction(value, master):
     try:
         value = float(value)
         return mumax_pb2.ScalarFunction(scalar=value)
     except:
         if isinstance(value, str):
             return mumax_pb2.ScalarFunction(gocode=value)
-        elif hasattr(value, '__call__'): #this would be the python call
-            raise NotImplementedError("Using python functions is not yet supported")
+        elif callable(value): #this would be the python call
+            signat = signature(value)
+            if len(signat.parameters) == 0:
+                master.scalarpyfuncs.append(value)
+            elif len(signat.parameters) == 1:
+                master.scalarpyfuncs.append(lambda: value(mm.T))
+            else:
+                raise TypeError("Python function must have either one or no arguments")
         else:
-            raise TypeError("Scalar Function argument must either be a float or a string representing go code")
+            raise TypeError("Scalar Function argument must either be a float, a string representing go code or a python function")
         
 def _makeScalarFunction3(value):
     try:

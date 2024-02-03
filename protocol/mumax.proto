@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package mumaxpy;
 
-option go_package = "github.com/will-henderson/mumaxpy/protocol";
+option go_package = ".";
 
 message NULL{    
 }
@@ -111,7 +111,10 @@ message CallResponse {
 }
 
 message RevComRequest {
-    int64 pyfunc = 1;
+    oneof pyfunc {
+        int64 scalarpyfunc = 1;
+        int64 vectorpyfunc = 2;
+    }
 }
 
 message Vector {
@@ -143,7 +146,7 @@ message BoolSet{
 }
 
 message IntSet{
-    MumaxObject mmobj = 1;c
+    MumaxObject mmobj = 1;
     int64 s = 2;
 }
 
