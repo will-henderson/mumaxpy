@@ -19,31 +19,32 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Mumax_Eval_FullMethodName              = "/mumaxpy.mumax/Eval"
-	Mumax_GetIdentifiers_FullMethodName    = "/mumaxpy.mumax/GetIdentifiers"
-	Mumax_GetTypeInfo_FullMethodName       = "/mumaxpy.mumax/GetTypeInfo"
-	Mumax_Call_FullMethodName              = "/mumaxpy.mumax/Call"
-	Mumax_CallMethod_FullMethodName        = "/mumaxpy.mumax/CallMethod"
-	Mumax_GetBool_FullMethodName           = "/mumaxpy.mumax/GetBool"
-	Mumax_GetInt_FullMethodName            = "/mumaxpy.mumax/GetInt"
-	Mumax_GetString_FullMethodName         = "/mumaxpy.mumax/GetString"
-	Mumax_GetDouble_FullMethodName         = "/mumaxpy.mumax/GetDouble"
-	Mumax_SetBool_FullMethodName           = "/mumaxpy.mumax/SetBool"
-	Mumax_SetInt_FullMethodName            = "/mumaxpy.mumax/SetInt"
-	Mumax_SetDouble_FullMethodName         = "/mumaxpy.mumax/SetDouble"
-	Mumax_SetString_FullMethodName         = "/mumaxpy.mumax/SetString"
-	Mumax_SetVector_FullMethodName         = "/mumaxpy.mumax/SetVector"
-	Mumax_SetScalarFunction_FullMethodName = "/mumaxpy.mumax/SetScalarFunction"
-	Mumax_SetVectorFunction_FullMethodName = "/mumaxpy.mumax/SetVectorFunction"
-	Mumax_SetMumax_FullMethodName          = "/mumaxpy.mumax/SetMumax"
-	Mumax_GetFieldBool_FullMethodName      = "/mumaxpy.mumax/GetFieldBool"
-	Mumax_GetFieldInt_FullMethodName       = "/mumaxpy.mumax/GetFieldInt"
-	Mumax_GetFieldString_FullMethodName    = "/mumaxpy.mumax/GetFieldString"
-	Mumax_GetFieldDouble_FullMethodName    = "/mumaxpy.mumax/GetFieldDouble"
-	Mumax_GetFieldMumax_FullMethodName     = "/mumaxpy.mumax/GetFieldMumax"
-	Mumax_DestroyMumax_FullMethodName      = "/mumaxpy.mumax/DestroyMumax"
-	Mumax_NewSlice_FullMethodName          = "/mumaxpy.mumax/NewSlice"
-	Mumax_NewGPUSlice_FullMethodName       = "/mumaxpy.mumax/NewGPUSlice"
+	Mumax_Eval_FullMethodName                 = "/mumaxpy.mumax/Eval"
+	Mumax_GetIdentifiers_FullMethodName       = "/mumaxpy.mumax/GetIdentifiers"
+	Mumax_GetTypeInfo_FullMethodName          = "/mumaxpy.mumax/GetTypeInfo"
+	Mumax_Call_FullMethodName                 = "/mumaxpy.mumax/Call"
+	Mumax_CallMethod_FullMethodName           = "/mumaxpy.mumax/CallMethod"
+	Mumax_ReverseCommunication_FullMethodName = "/mumaxpy.mumax/ReverseCommunication"
+	Mumax_GetBool_FullMethodName              = "/mumaxpy.mumax/GetBool"
+	Mumax_GetInt_FullMethodName               = "/mumaxpy.mumax/GetInt"
+	Mumax_GetString_FullMethodName            = "/mumaxpy.mumax/GetString"
+	Mumax_GetDouble_FullMethodName            = "/mumaxpy.mumax/GetDouble"
+	Mumax_SetBool_FullMethodName              = "/mumaxpy.mumax/SetBool"
+	Mumax_SetInt_FullMethodName               = "/mumaxpy.mumax/SetInt"
+	Mumax_SetDouble_FullMethodName            = "/mumaxpy.mumax/SetDouble"
+	Mumax_SetString_FullMethodName            = "/mumaxpy.mumax/SetString"
+	Mumax_SetVector_FullMethodName            = "/mumaxpy.mumax/SetVector"
+	Mumax_SetScalarFunction_FullMethodName    = "/mumaxpy.mumax/SetScalarFunction"
+	Mumax_SetVectorFunction_FullMethodName    = "/mumaxpy.mumax/SetVectorFunction"
+	Mumax_SetMumax_FullMethodName             = "/mumaxpy.mumax/SetMumax"
+	Mumax_GetFieldBool_FullMethodName         = "/mumaxpy.mumax/GetFieldBool"
+	Mumax_GetFieldInt_FullMethodName          = "/mumaxpy.mumax/GetFieldInt"
+	Mumax_GetFieldString_FullMethodName       = "/mumaxpy.mumax/GetFieldString"
+	Mumax_GetFieldDouble_FullMethodName       = "/mumaxpy.mumax/GetFieldDouble"
+	Mumax_GetFieldMumax_FullMethodName        = "/mumaxpy.mumax/GetFieldMumax"
+	Mumax_DestroyMumax_FullMethodName         = "/mumaxpy.mumax/DestroyMumax"
+	Mumax_NewSlice_FullMethodName             = "/mumaxpy.mumax/NewSlice"
+	Mumax_NewGPUSlice_FullMethodName          = "/mumaxpy.mumax/NewGPUSlice"
 )
 
 // MumaxClient is the client API for Mumax service.
@@ -55,6 +56,7 @@ type MumaxClient interface {
 	GetTypeInfo(ctx context.Context, in *STRING, opts ...grpc.CallOption) (Mumax_GetTypeInfoClient, error)
 	Call(ctx context.Context, in *FunctionCall, opts ...grpc.CallOption) (*CallResponse, error)
 	CallMethod(ctx context.Context, in *MethodCall, opts ...grpc.CallOption) (*CallResponse, error)
+	ReverseCommunication(ctx context.Context, opts ...grpc.CallOption) (Mumax_ReverseCommunicationClient, error)
 	GetBool(ctx context.Context, in *MumaxObject, opts ...grpc.CallOption) (*BOOL, error)
 	GetInt(ctx context.Context, in *MumaxObject, opts ...grpc.CallOption) (*INT, error)
 	GetString(ctx context.Context, in *MumaxObject, opts ...grpc.CallOption) (*STRING, error)
@@ -174,6 +176,37 @@ func (c *mumaxClient) CallMethod(ctx context.Context, in *MethodCall, opts ...gr
 		return nil, err
 	}
 	return out, nil
+}
+
+func (c *mumaxClient) ReverseCommunication(ctx context.Context, opts ...grpc.CallOption) (Mumax_ReverseCommunicationClient, error) {
+	stream, err := c.cc.NewStream(ctx, &Mumax_ServiceDesc.Streams[2], Mumax_ReverseCommunication_FullMethodName, opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &mumaxReverseCommunicationClient{stream}
+	return x, nil
+}
+
+type Mumax_ReverseCommunicationClient interface {
+	Send(*RevComResult) error
+	Recv() (*RevComRequest, error)
+	grpc.ClientStream
+}
+
+type mumaxReverseCommunicationClient struct {
+	grpc.ClientStream
+}
+
+func (x *mumaxReverseCommunicationClient) Send(m *RevComResult) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *mumaxReverseCommunicationClient) Recv() (*RevComRequest, error) {
+	m := new(RevComRequest)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
 }
 
 func (c *mumaxClient) GetBool(ctx context.Context, in *MumaxObject, opts ...grpc.CallOption) (*BOOL, error) {
@@ -365,6 +398,7 @@ type MumaxServer interface {
 	GetTypeInfo(*STRING, Mumax_GetTypeInfoServer) error
 	Call(context.Context, *FunctionCall) (*CallResponse, error)
 	CallMethod(context.Context, *MethodCall) (*CallResponse, error)
+	ReverseCommunication(Mumax_ReverseCommunicationServer) error
 	GetBool(context.Context, *MumaxObject) (*BOOL, error)
 	GetInt(context.Context, *MumaxObject) (*INT, error)
 	GetString(context.Context, *MumaxObject) (*STRING, error)
@@ -406,6 +440,9 @@ func (UnimplementedMumaxServer) Call(context.Context, *FunctionCall) (*CallRespo
 }
 func (UnimplementedMumaxServer) CallMethod(context.Context, *MethodCall) (*CallResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CallMethod not implemented")
+}
+func (UnimplementedMumaxServer) ReverseCommunication(Mumax_ReverseCommunicationServer) error {
+	return status.Errorf(codes.Unimplemented, "method ReverseCommunication not implemented")
 }
 func (UnimplementedMumaxServer) GetBool(context.Context, *MumaxObject) (*BOOL, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetBool not implemented")
@@ -574,6 +611,32 @@ func _Mumax_CallMethod_Handler(srv interface{}, ctx context.Context, dec func(in
 		return srv.(MumaxServer).CallMethod(ctx, req.(*MethodCall))
 	}
 	return interceptor(ctx, in, info, handler)
+}
+
+func _Mumax_ReverseCommunication_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(MumaxServer).ReverseCommunication(&mumaxReverseCommunicationServer{stream})
+}
+
+type Mumax_ReverseCommunicationServer interface {
+	Send(*RevComRequest) error
+	Recv() (*RevComResult, error)
+	grpc.ServerStream
+}
+
+type mumaxReverseCommunicationServer struct {
+	grpc.ServerStream
+}
+
+func (x *mumaxReverseCommunicationServer) Send(m *RevComRequest) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *mumaxReverseCommunicationServer) Recv() (*RevComResult, error) {
+	m := new(RevComResult)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
 }
 
 func _Mumax_GetBool_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -1046,6 +1109,12 @@ var Mumax_ServiceDesc = grpc.ServiceDesc{
 			StreamName:    "GetTypeInfo",
 			Handler:       _Mumax_GetTypeInfo_Handler,
 			ServerStreams: true,
+		},
+		{
+			StreamName:    "ReverseCommunication",
+			Handler:       _Mumax_ReverseCommunication_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
 		},
 	},
 	Metadata: "mumax.proto",

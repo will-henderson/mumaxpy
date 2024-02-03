@@ -10,11 +10,11 @@ import (
 	pb "github.com/will-henderson/mumaxpy/protocol"
 )
 
-//#cgo LDFLAGS: -L –lcudart -lcuda
-//#cgo LDFLAGS:-L/usr/local/cuda/lib64/stubs/
-//#cgo CFLAGS: -I/u
-//#cgo LDFLAGS:-L/usr/lib/x86_64-linux-gnu/
-//#cgo CFLAGS: -I/usr/include
+////#cgo CFLAGS: -I /usr/local/cuda-11.7/targets/x86_64-linux/include/
+////#cgo LDFLAGS:-L /usr/local/cuda-11.7/targets/x86_64-linux/lib/
+
+//#cgo CFLAGS: -I /usr/include
+//#cgo LDFLAGS: -L/usr/lib/x86_64-linux-gnu -lcuda -lcudart
 //#include <cuda.h>
 //#include <cuda_runtime_api.h>
 import "C"
