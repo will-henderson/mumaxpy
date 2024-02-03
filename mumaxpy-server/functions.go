@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"reflect"
-	"fmt"
 
 	"github.com/mumax/3/data"
 	en "github.com/mumax/3/engine"
@@ -38,7 +37,6 @@ func processScalarFunction(s *pb.ScalarFunction) (script.ScalarFunction, error) 
 	case *pb.ScalarFunction_Pyfunc:
 		func_no := len(ScalarFunctionResults)
 		ScalarFunctionResults = append(ScalarFunctionResults, make(chan float64))
-		fmt.Println("MADE A SCALAR PYFUNC")
 		return &py_sf{func_no}, nil
 	}
 	return nil, nil //don't get to this line
@@ -54,8 +52,8 @@ func processVectorFunction(v *pb.VectorFunction) (script.VectorFunction, error) 
 		return &go_vf{expr}, nil
 	case *pb.VectorFunction_Pyfunc:
 		func_no := len(VectorFunctionResults)
-		VectorFunctionResults = append(VectorFunctionResults, make(chan float64))
-		return &py_vf{expr}
+		VectorFunctionResults = append(VectorFunctionResults, make(chan [3]float64))
+		return &py_vf{func_no}, nil
 	case *pb.VectorFunction_Components:
 		sf3 := value.Components
 		var intercomp [3]script.ScalarFunction
@@ -106,7 +104,6 @@ type py_sf struct {
 }
 
 func (c *py_sf) Eval() interface{} {
-	fmt.Println("EVALUATING")
 	ScalarFunctionRequest <- c.func_no
 	return <-ScalarFunctionResults[c.func_no]
 }
@@ -115,6 +112,20 @@ func (c *py_sf) Type() reflect.Type   { return script.ScalarFunction_t }
 func (c *py_sf) Float() float64       { return c.Eval().(float64) }
 func (c *py_sf) Child() []script.Expr { return nil }
 func (c *py_sf) Fix() script.Expr     { return c }
+
+type py_vf struct {
+	func_no int
+}
+
+func (c *py_vf) Eval() interface{} {
+	VectorFunctionRequest <- c.func_no
+	return <-VectorFunctionResults[c.func_no]
+}
+
+func (c *py_vf) Type() reflect.Type   { return script.VectorFunction_t }
+func (c *py_vf) Float3() data.Vector  { return c.Eval().(data.Vector) }
+func (c *py_vf) Child() []script.Expr { return nil }
+func (c *py_vf) Fix() script.Expr     { return c }
 
 type go_vf struct {
 	in script.Expr

@@ -98,7 +98,7 @@ class Mumax:
     def __exit__(self):
         self.close()
 
-    def close(self, signal=None, frame=None):
+    def close(self, sig=None, frame=None):
         
         self.server.send_signal(signal.SIGINT)
         self.channel.close()

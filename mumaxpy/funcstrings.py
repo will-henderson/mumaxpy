@@ -108,7 +108,7 @@ def functionString(name, argnames, argtypes, outtypes, doc):
     s  = "def f(self, " +  ", ".join(argnames) + "):\n" 
     s += docComment(doc, argnames, argtypes)
     s += functionCall(name.lower(), argnames, argtypes, True)
-    s += "    reply = asyncio.run(revcom.Call(fc, self)) \n"
+    s += "    reply = asyncio.run(revcom.call_rc(fc, self)) \n"
     s += returnLine(outtypes, True)
     s += "self." + name + " = f.__get__(self)"  
     return s
@@ -160,10 +160,10 @@ def lValueSetString(name, intype):
             setstring += "    res = self.stub.SetVector(mumax_pb2.VectorSet(mmobj=identifier, x=value[0], y=value[1], z=value[2]))\n"
 
         case "script.ScalarFunction":
-            setstring += "    self.stub.SetScalarFunction(mumax_pb2.ScalarFunctionSet(mmobj=identifier, s=_makeScalarFunction(value, self)))\n"
+            setstring += "    revcom.setScalarFunction_rc(mumax_pb2.ScalarFunctionSet(mmobj=identifier, s=_makeScalarFunction(value, self)), self)\n"
 
         case "script.VectorFunction":
-            setstring += "    self.stub.SetVectorFunction(mumax_pb2.VectorFunctionSet(mmobj=identifier, s=_makeVectorFunction(value, self)))\n"
+            setstring += "    revcom.setVectorFunction_rc(mumax_pb2.VectorFunctionSet(mmobj=identifier, s=_makeVectorFunction(value, self)), self)\n"
 
         case _: 
             setstring += "    if not hasattr(value, 'identifier'): raise TypeError('The value should be a mumax object here.')\n"

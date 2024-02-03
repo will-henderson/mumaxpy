@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io"
 
 	pb "github.com/will-henderson/mumaxpy/protocol"
@@ -37,6 +38,7 @@ func RevComReceiver(stream pb.Mumax_ReverseCommunicationServer) error {
 func ScalarRevComRequester(stream pb.Mumax_ReverseCommunicationServer) error {
 	for {
 		request := <-ScalarFunctionRequest
+		fmt.Println("WE HAVE A REQUEST!!", request)
 		if request == -1 {
 			return nil
 		}
