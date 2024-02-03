@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"io"
 
 	pb "github.com/will-henderson/mumaxpy/protocol"
@@ -15,52 +14,41 @@ var RevComRequests = make(chan int)
 var ScalarFunctionResults [](chan float64)
 var VectorFunctionResults [](chan [3]float64)
 
-func RevComReceiver(stream pb.Mumax_ReverseCommunicationServer) {
+func RevComReceiver(stream pb.Mumax_ReverseCommunicationServer) error {
 	for {
 		result, err := stream.Recv()
 		if err == io.EOF {
 			ScalarFunctionRequest <- -1
 			VectorFunctionRequest <- -1
-			return
+			return nil
 		}
 		func_no := <-RevComRequests
 
 		switch value := result.Result.(type) {
 		case *pb.RevComResult_Scalar:
 			ScalarFunctionResults[func_no] <- value.Scalar
-		default:
+		case *pb.RevComResult_Vec:
 			vv := value.Vec
-			VectorFunctionResults[func_no] <- [3]float64[value.X, value.Y, value.Z]
+			VectorFunctionResults[func_no] <- [3]float64{vv.X, vv.Y, vv.Z}
 		}
 	}
-
-	_ = func_no
-
 }
 
-func (e *mumax) ScalarFuncHandler(stream pb.Mumax_ReverseCommunicationServer) {
-
+func RevComRequester(stream pb.Mumax_ReverseCommunicationServer, funcrequest chan int) error {
 	for {
-		request := <-ScalarFunctionRequest
+		request := <-funcrequest
 		if request == -1 {
 			return nil
 		}
-		stream.Send(&pb.RevComRequest{Pyfunc: request})
-		RevComRequest2 <- request
+		stream.Send(&pb.RevComRequest{Pyfunc: int64(request)})
+		RevComRequests <- request
 	}
 }
 
-func (e *mumax) ReverseCommunication(ctx context.Context, stream pb.Mumax_ReverseCommunicationServer) error {
+func (e *mumax) ReverseCommunication(stream pb.Mumax_ReverseCommunicationServer) error {
 
-	go ScalarFuncHandler(stream)
-
-	for {
-		result, err := stream.Recv()
-		if err == io.EOF {
-			RevComRequest <- -1
-			return
-		}
-		pf := <-RevComRequest2
-		pyfuncs[pf] <- result
-	}
+	go RevComRequester(stream, ScalarFunctionRequest)
+	go RevComRequester(stream, VectorFunctionRequest)
+	err := RevComReceiver(stream)
+	return err
 }
