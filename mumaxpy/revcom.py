@@ -25,7 +25,7 @@ class RevComHandler():
 async def Operation(operation, initialsend, master):
 
     async def op():
-        return operation(initialsend)
+        return await operation(initialsend)
 
     op_task = asyncio.create_task(op())
 

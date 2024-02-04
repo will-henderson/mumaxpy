@@ -108,7 +108,7 @@ def functionString(name, argnames, argtypes, outtypes, doc):
     s  = "def f(self, " +  ", ".join(argnames) + "):\n" 
     s += docComment(doc, argnames, argtypes)
     s += functionCall(name.lower(), argnames, argtypes, True)
-    s += "    reply = self.asrun(revcom.Operation(self.stub.Call, fc, self)) \n"
+    s += "    reply = self.asrun(revcom.Operation(self.stub.Call, fc, self))\n"
     s += returnLine(outtypes, True)
     s += "self." + name + " = f.__get__(self)"  
     return s
@@ -120,7 +120,7 @@ def methodString(mthname, argnames, argtypes, outtypes, doc):
     s += docComment(doc, argnames, argtypes)
     s += functionCall(mthname, argnames, argtypes, False)
     s += "    mthcall = mumax_pb2.MethodCall(mmobj=self.identifier, fc=fc)\n" 
-    s += "    reply = self.master.stub.CallMethod(mthcall) \n"
+    s += "    reply = self.master.asrun(revcom.Operation(self.master.stub.CallMethod, mthcall, self.master)) \n"
     s += returnLine(outtypes, False)
     s += "classdict['" + mthname +"'] = f"
 

@@ -106,10 +106,13 @@ class Mumax:
         #check if lines or columns have been added to table, if so update.
         pass
 
+    def __enter__(self):
+        return self
+
     def __del__(self):
         self.close()
 
-    def __exit__(self):
+    def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
 
     def close(self, sig=None, frame=None):
