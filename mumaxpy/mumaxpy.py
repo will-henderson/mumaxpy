@@ -16,6 +16,9 @@ from inspect import signature
 
 from . import funcstrings
 from . import revcom
+from . import jupyterhack
+
+
 
 
 socket_address = "mumaxpy.sock"
@@ -38,12 +41,21 @@ class Mumax:
             args.append(str(v))
         self.server = subprocess.Popen(args)
 
+        ##if running in ipython terminal, we need to start the event loop manually. 
+        try:
+            self.loop = asyncio.get_event_loop()
+        except RuntimeError as e:
+            if str(e).startswith('There is no current event loop in thread'):
+                self.loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(self.loop)
+            else:
+                raise
+
         socketpath = "unix:" + socket_address
         self.channel = grpc.aio.insecure_channel(socketpath, options=[
             ('grpc.max_send_message_length', 1024**3),
             ('grpc.max_receive_message_length', 1024**3)])
         self.stub = mumax_pb2_grpc.mumaxStub(self.channel)
-        self.loop = asyncio.get_event_loop()
         self.asrun = self.loop.run_until_complete
 
         signal.signal(signal.SIGINT, self.close)
