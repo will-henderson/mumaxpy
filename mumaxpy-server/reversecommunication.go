@@ -32,16 +32,17 @@ func RevComReceiver(stream pb.Mumax_ReverseCommunicationServer) error {
 			vv := value.Vec
 			VectorFunctionResults[func_no] <- [3]float64{vv.X, vv.Y, vv.Z}
 		}
+		_ = func_no
 	}
 }
 
 func ScalarRevComRequester(stream pb.Mumax_ReverseCommunicationServer) error {
 	for {
 		request := <-ScalarFunctionRequest
-		fmt.Println("WE HAVE A REQUEST!!", request)
 		if request == -1 {
 			return nil
 		}
+		fmt.Println("WE HAVE A REQUEST!!", request)
 		stream.Send(&pb.RevComRequest{Pyfunc: &pb.RevComRequest_Scalarpyfunc{Scalarpyfunc: int64(request)}})
 
 		RevComRequests <- request

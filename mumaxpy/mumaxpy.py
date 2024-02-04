@@ -39,10 +39,12 @@ class Mumax:
         self.server = subprocess.Popen(args)
 
         socketpath = "unix:" + socket_address
-        self.channel = grpc.insecure_channel(socketpath, options=[
+        self.channel = grpc.aio.insecure_channel(socketpath, options=[
             ('grpc.max_send_message_length', 1024**3),
             ('grpc.max_receive_message_length', 1024**3)])
         self.stub = mumax_pb2_grpc.mumaxStub(self.channel)
+        self.loop = asyncio.get_event_loop()
+        self.asrun = self.loop.run_until_complete
 
         signal.signal(signal.SIGINT, self.close)
         signal.signal(signal.SIGTERM, self.close)
@@ -52,18 +54,18 @@ class Mumax:
         time.sleep(1)
 
         self.typelist = dict()
-        self._populate_functions()
+        self.asrun(self._populate_functions())
 
         self.scalarpyfuncs = []
         self.vectorpyfuncs = []
 
-    def _populate_functions(self):
+    async def _populate_functions(self):
 
         identifiers = self.stub.GetIdentifiers(mumax_pb2.NULL())
 
         self.types = dict()
 
-        for identifier in identifiers:
+        async for identifier in identifiers:
             match identifier.WhichOneof("props"):
                 case "f":
                     s = funcstrings.functionString(identifier.name, identifier.f.argnames, identifier.f.argtypes, identifier.f.outtypes, identifier.doc)
@@ -101,13 +103,13 @@ class Mumax:
     def close(self, sig=None, frame=None):
         
         self.server.send_signal(signal.SIGINT)
-        self.channel.close()
+        self.loop.run_until_complete(self.channel.close())
 
     def eval(self, cmd):
         if not isinstance(cmd, str):
             pass #this is an error 
         
-        self.stub.Eval(mumax_pb2.STRING(s=cmd))
+        self.loop.run_until_complete(self.stub.Eval(mumax_pb2.STRING(s=cmd)))
 
 def toObj(identifier, vtype, master):
     if vtype not in master.typelist:
@@ -120,7 +122,7 @@ def makeType(master, vtype):
         self.identifier = identifier
 
     def destructor(self):
-        self.master.stub.DestroyMumax(self.identifier)
+        self.master.asrun(self.master.stub.DestroyMumax(self.identifier))
 
 
     classdict = {"__init__": constructor,
@@ -128,15 +130,15 @@ def makeType(master, vtype):
                  "__exit__": destructor, 
                   "master": master}
 
-    addMethods(master, vtype, classdict)
+    master.asrun(addMethods(master, vtype, classdict))
 
     master.typelist[vtype] = type(vtype, (object, ), classdict)
 
-def addMethods(master, vtype, classdict):
+async def addMethods(master, vtype, classdict):
     req = mumax_pb2.STRING(s=vtype)
     identifiers = master.stub.GetTypeInfo(req)
 
-    for identifier in identifiers:
+    async for identifier in identifiers:
         match identifier.WhichOneof("props"):
             case "f":
                 s = funcstrings.methodString(identifier.name, identifier.f.argnames, identifier.f.argtypes, identifier.f.outtypes, identifier.doc)
@@ -159,7 +161,7 @@ class Slice(np.ndarray):
         basearr = np.moveaxis(basearr, [0, 1, 2, 3], [0, 3, 2, 1])
         arr = basearr.view(cls)
         arr.master = master
-        arr.identifier = master.stub.NewSlice(mumax_pb2.Slice(ncomp=ncomp, nx=nx, ny=ny, nz=nz, file=name))
+        arr.identifier = master.asrun(master.stub.NewSlice(mumax_pb2.Slice(ncomp=ncomp, nx=nx, ny=ny, nz=nz, file=name)))
         arr.shm = mem
         arr.maydestroy = True 
 
@@ -192,7 +194,7 @@ class Slice(np.ndarray):
     def destructor(self):
         #it is a niche edge case where mumax will still want access to a slice that python doesn't want.
         #so just ignore it.
-        self.master.stub.DestroyMumax(self.identifier) 
+        self.master.asrun(self.master.stub.DestroyMumax(self.identifier))
         self.shm.unlink()
         self.shm.close()
 
