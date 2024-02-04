@@ -88,6 +88,7 @@ class Mumax:
             exec(s)
 
         #however, we now modify the new slice function to work in shared memory. 
+        # we do these here so that the previous population doesn't overwrite. 
         def NewSlice(self, ncomp, Nx, Ny, Nz):
             return Slice(self, ncomp, Nx, Ny, Nz)
         self.NewSlice = NewSlice.__get__(self)
@@ -175,6 +176,7 @@ class Slice(np.ndarray):
         basearr = np.ndarray(shape=(ncomp, nz, ny, nx), dtype=np.float32, buffer=mem.buf)
         basearr = np.moveaxis(basearr, [0, 1, 2, 3], [0, 3, 2, 1])
         arr = basearr.view(cls)
+        arr.mumax_shape=(ncomp, nz, ny, nx)
         arr.master = master
         arr.identifier = master.asrun(master.stub.NewSlice(mumax_pb2.Slice(ncomp=ncomp, nx=nx, ny=ny, nz=nz, file=name)))
         arr.shm = mem
@@ -216,7 +218,16 @@ class Slice(np.ndarray):
     def __del__(self):
         if not isinstance(self.base, Slice) and self.maydestroy:
             self.destructor()
-    
+
+    def attach(self, master):
+        self.master = master
+        self.identifier = master.asrun(master.stub.NewSlice(
+            mumax_pb2.Slice(ncomp=self.mumax_shape[0], 
+                            nx=self.mumax_shape[1],
+                            ny=self.mumax_shape[2],
+                            nz=self.mumax_shape[3],
+                              file=self.shm._name)))
+
 class DiscretisedFieldMM(df.Field):
     __class__ = df.Field #little trick to make ubermag work
     def __init__(self, master, quantity):
@@ -245,7 +256,6 @@ class DiscretisedFieldMM(df.Field):
 
         super().__init__(ubermesh, dim, value=np.moveaxis(arr, 0, 3) , dtype=np.float32, units=unit)
 
-        
 def _pam(mmobj):
     return mmobj.identifier
 
