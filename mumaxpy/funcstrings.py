@@ -103,30 +103,49 @@ def returnLine(outtypes, isMM):
 
     return s
 
-def functionString(name, argnames, argtypes, outtypes, doc):
+def functionString(name, argnames, argtypes, outtypes, doc, asynchronous):
 
-    s  = "def f(self, " +  ", ".join(argnames) + "):\n" 
+    if asynchronous:
+        s = "async "
+        def asrun(opstr):
+            return "await " + opstr
+    else:
+        s = ""
+        def asrun(opstr):
+            return "self.roc(" + opstr + ")"
+
+    s += "def f(self, " +  ", ".join(argnames) + "):\n" 
     s += docComment(doc, argnames, argtypes)
     s += functionCall(name.lower(), argnames, argtypes, True)
-    s += "    reply = self.asrun(revcom.Operation(self.stub.Call, fc, self))\n"
+    s += "    reply = " + asrun("revcom.Operation(self.stub.Call, fc, self)") + "\n"
     s += returnLine(outtypes, True)
     s += "self." + name + " = f.__get__(self)"  
     return s
 
 
-def methodString(mthname, argnames, argtypes, outtypes, doc):
+def methodString(mthname, argnames, argtypes, outtypes, doc, asynchronous):
 
-    s  = "def f(self, " +  ", ".join(argnames) + "):\n" 
+    if asynchronous:
+        s = "async "
+        def asrun(opstr):
+            return "await " + opstr
+    else:
+        s = ""
+        def asrun(opstr):
+            return "self.master.roc(" + opstr + ")"
+
+    s += "def f(self, " +  ", ".join(argnames) + "):\n" 
     s += docComment(doc, argnames, argtypes)
     s += functionCall(mthname, argnames, argtypes, False)
     s += "    mthcall = mumax_pb2.MethodCall(mmobj=self.identifier, fc=fc)\n" 
-    s += "    reply = self.master.asrun(revcom.Operation(self.master.stub.CallMethod, mthcall, self.master)) \n"
+    s += "    reply = " + asrun("revcom.Operation(self.master.stub.CallMethod, mthcall, self.master)") +  "\n"
     s += returnLine(outtypes, False)
     s += "classdict['" + mthname +"'] = f"
 
     return s
 
 def lValueSetString(name, intype):
+    #note that here we always use run until complete because getters and setters are always synchronous.
 
     setstring = "def set(self, value):\n"
     setstring += "    identifier = mumax_pb2.MumaxObject(name='" + name.lower() + "')\n"
@@ -137,19 +156,19 @@ def lValueSetString(name, intype):
             setstring += "        value = bool(value)\n"
             setstring += "    except:\n"
             setstring += "        raise TypeError('" + name + " takes a boolean input to set')\n"
-            setstring += "    res = self.stub.SetBool(mumax_pb2.BoolSet(mmobj=identifier, s=value))\n"
+            setstring += "    res = self.roc(self.stub.SetBool(mumax_pb2.BoolSet(mmobj=identifier, s=value)))\n"
         case "float32" | "float64":
             setstring += "    try:\n"
             setstring += "        value = float(value)\n"
             setstring += "    except:\n"
             setstring += "        raise TypeError('" + name + " takes a float input to set')\n"
-            setstring += "    res = self.stub.SetDouble(mumax_pb2.DoubleSet(mmobj=identifier, s=value))\n"
+            setstring += "    res = self.roc(self.stub.SetDouble(mumax_pb2.DoubleSet(mmobj=identifier, s=value)))\n"
         case "int":
             setstring += "    try:\n"
             setstring += "        value = int(value)\n"
             setstring += "    except:\n"
             setstring += "        raise TypeError('" + name + " takes a integer input to set')\n"
-            setstring += "    res = self.stub.SetInt(mumax_pb2.IntSet(mmobj=identifier, s=value))\n"
+            setstring += "    res = self.roc(self.stub.SetInt(mumax_pb2.IntSet(mmobj=identifier, s=value)))\n"
         case "data.Vector":
             setstring += "    try:\n"
             setstring += "        value = list(value)\n"
@@ -157,17 +176,17 @@ def lValueSetString(name, intype):
             setstring += "        value = [float(v) for v in value]\n"
             setstring += "    except:\n"
             setstring += "        raise TypeError('" + name + " takes a list-like object of floats of length 3 to set')\n"
-            setstring += "    res = self.stub.SetVector(mumax_pb2.VectorSet(mmobj=identifier, x=value[0], y=value[1], z=value[2]))\n"
+            setstring += "    res = self.roc(self.stub.SetVector(mumax_pb2.VectorSet(mmobj=identifier, x=value[0], y=value[1], z=value[2])))\n"
 
         case "script.ScalarFunction":
-            setstring += "    self.asrun(revcom.Operation(self.stub.SetScalarFunction, mumax_pb2.ScalarFunctionSet(mmobj=identifier, s=_makeScalarFunction(value, self)), self))\n"
+            setstring += "    self.roc(revcom.Operation(self.stub.SetScalarFunction, mumax_pb2.ScalarFunctionSet(mmobj=identifier, s=_makeScalarFunction(value, self)), self))\n"
 
         case "script.VectorFunction":
-            setstring += "    self.asrun(revcom.Operation(self.stub.SetVectorFunction, mumax_pb2.VectorFunctionSet(mmobj=identifier, s=_makeVectorFunction(value, self)), self))\n"
+            setstring += "    self.roc(revcom.Operation(self.stub.SetVectorFunction, mumax_pb2.VectorFunctionSet(mmobj=identifier, s=_makeVectorFunction(value, self)), self))\n"
 
         case _: 
             setstring += "    if not hasattr(value, 'identifier'): raise TypeError('The value should be a mumax object here.')\n"
-            setstring += "    self.stub.SetMumax(mumax_pb2.MumaxSet(mmobj=identifier, s=value.identifier))\n"
+            setstring += "    self.roc(self.stub.SetMumax(mumax_pb2.MumaxSet(mmobj=identifier, s=value.identifier)))\n"
         #case "engine.OutputFormat":
         #
         #case "engine.FixedLayerPosition":
@@ -183,13 +202,13 @@ def getString(name, vtype):
 
     match vtype:
         case "int":
-            getstring += "    res = self.asrun(self.stub.GetInt(req)).s\n"
+            getstring += "    res = self.roc(self.stub.GetInt(req)).s\n"
         case "bool":
-            getstring += "    res = self.asrun(self.stub.GetBool(req)).s\n"
+            getstring += "    res = self.roc(self.stub.GetBool(req)).s\n"
         case "string":
-            getstring += "    res = self.asrun(self.stub.GetString(req)).s\n"
+            getstring += "    res = self.roc(self.stub.GetString(req)).s\n"
         case "float32" | "float64":
-            getstring += "    res = self.asrun(self.stub.GetDouble(req)).s\n"
+            getstring += "    res = self.roc(self.stub.GetDouble(req)).s\n"
         case _:
             getstring += "    res = toObj(req, '" + vtype + "', self)\n"
 
@@ -222,15 +241,15 @@ def fieldString(name, ftype, doc):
 
     match ftype:
         case "int":
-            getstring += "    res = self.master.asrun(self.master.stub.GetFieldInt(req)).s\n"
+            getstring += "    res = self.master.roc(self.master.stub.GetFieldInt(req)).s\n"
         case "bool":
-            getstring += "    res = self.master.asrun(self.master.stub.GetFieldBool(req)).s\n"
+            getstring += "    res = self.master.roc(self.master.stub.GetFieldBool(req)).s\n"
         case "string":
-            getstring += "    res = self.master.asrun(self.master.stub.GetFieldString(req)).s\n"
+            getstring += "    res = self.master.roc(self.master.stub.GetFieldString(req)).s\n"
         case "float32" | "float64":
-            getstring += "    res = self.master.asrun(self.master.stub.GetFieldDouble(req)).s\n"
+            getstring += "    res = self.master.roc(self.master.stub.GetFieldDouble(req)).s\n"
         case _:
-            getstring += "    res = toObj(self.master.asrun(self.master.stub.GetFieldMumax(req)), '" + ftype + "', self.master)\n"
+            getstring += "    res = toObj(self.master.roc(self.master.stub.GetFieldMumax(req)), '" + ftype + "', self.master)\n"
 
 
     getstring += "    return res\n"

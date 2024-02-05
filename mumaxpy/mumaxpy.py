@@ -25,7 +25,7 @@ socket_address = "mumaxpy.sock"
 
 class Mumax:
 
-    def __init__(self, o=None, **kwargs):
+    def __init__(self, o=None, asynchronous=False, **kwargs):
 
         #serverpath = os.path.join('/root', 'go', 'bin', 'mumaxpy-server')
         serverpath = os.path.join(os.path.expanduser('~'), 'go', 'bin', 'mumaxpy-server')
@@ -34,6 +34,7 @@ class Mumax:
             o = os.path.join(os.getcwd(), "mumax.out")
 
         self._output_directory = o
+        self._asynchronous = asynchronous
         args.append("-o")
         args.append(o)
         for k, v in kwargs.items():
@@ -56,7 +57,15 @@ class Mumax:
             ('grpc.max_send_message_length', 1024**3),
             ('grpc.max_receive_message_length', 1024**3)])
         self.stub = mumax_pb2_grpc.mumaxStub(self.channel)
-        self.asrun = self.loop.run_until_complete
+
+        if asynchronous:
+            async def run_coroutine(coroutine):
+                return await coroutine
+            self.asrun = run_coroutine
+        else:
+            self.asrun = self.loop.run_until_complete
+
+        self.roc = self.loop.run_until_complete
 
         signal.signal(signal.SIGINT, self.close)
         signal.signal(signal.SIGTERM, self.close)
@@ -66,12 +75,12 @@ class Mumax:
         time.sleep(1)
 
         self.typelist = dict()
-        self.asrun(self._populate_functions())
+        self.loop.run_until_complete(self._populate_functions(asynchronous))
 
         self.scalarpyfuncs = []
         self.vectorpyfuncs = []
 
-    async def _populate_functions(self):
+    async def _populate_functions(self, asynchronous):
 
         identifiers = self.stub.GetIdentifiers(mumax_pb2.NULL())
 
@@ -80,7 +89,7 @@ class Mumax:
         async for identifier in identifiers:
             match identifier.WhichOneof("props"):
                 case "f":
-                    s = funcstrings.functionString(identifier.name, identifier.f.argnames, identifier.f.argtypes, identifier.f.outtypes, identifier.doc)
+                    s = funcstrings.functionString(identifier.name, identifier.f.argnames, identifier.f.argtypes, identifier.f.outtypes, identifier.doc, asynchronous)
                 case "l":
                     s = funcstrings.lValueString(identifier.name, identifier.l.type, identifier.l.inputtype, identifier.doc)
                 case "r":
@@ -89,33 +98,60 @@ class Mumax:
 
         #however, we now modify the new slice function to work in shared memory. 
         # we do these here so that the previous population doesn't overwrite. 
-        def NewSlice(self, ncomp, Nx, Ny, Nz):
-            return Slice(self, ncomp, Nx, Ny, Nz)
-        self.NewSlice = NewSlice.__get__(self)
+        # also, for consistency I guess we should define these asyncly. 
 
-        def DiscretisedField(self, quantity):
-            return DiscretisedFieldMM(self, quantity)
-        self.DiscretisedField = DiscretisedField.__get__(self)
+        if not asynchronous:    
+            def NewSlice(self, ncomp, Nx, Ny, Nz):
+                return Slice(self, ncomp, Nx, Ny, Nz)
+            
+            def DiscretisedField(self, quantity):
+                return DiscretisedFieldMM(self, quantity, asynchronous=False)
+            
+            def SliceOf(self, quantity):
+                #slice of gets the same info as discretised field, but by avoiding discretisedfields wrapping we keep the shared me alive.
+                dim = quantity.NComp()
+                if hasattr(quantity, "Mesh"):
+                    mesh = quantity.Mesh()
+                else:
+                    mesh = self.m.Mesh()
 
-    #something that gets the same info as discretised field, but keeps the shared mem alive
-    def SliceOf(self, quantity):
-        
-        dim = quantity.NComp()
+                nx, ny, nz = mesh.Size()
 
-        if hasattr(quantity, "Mesh"):
-            mesh = quantity.Mesh()
+                arr = self.NewSlice(dim, nx, ny, nz)
+                gpusl = self.ValueOf(quantity)
+                self.SliceCopy(arr, gpusl)
+                self.Recycle(gpusl)
+
+                return arr
+                
         else:
-            mesh = self.m.Mesh()
+            async def NewSlice(self, ncomp, Nx, Ny, Nz):
+                #nothing async about this at all. but the numpy routines themselves aren't so can't improve this obviously. 
+                # Just for consistency with every other routine using async syntax.
+                return Slice(self, ncomp, Nx, Ny, Nz) 
 
-        nx, ny, nz = mesh.Size()
+            async def SliceOf(self, quantity):
+                dim = await quantity.NComp()
+                if hasattr(quantity, "Mesh"):
+                    mesh = await quantity.Mesh()
+                else:
+                    mesh = await self.m.Mesh()
 
-        arr = self.NewSlice(dim, nx, ny, nz)
+                nx, ny, nz = await mesh.Size()
 
-        gpusl = self.ValueOf(quantity)
-        self.SliceCopy(arr, gpusl)
-        self.Recycle(gpusl)
+                arr = await self.NewSlice(dim, nx, ny, nz)
+                gpusl = await self.ValueOf(quantity)
+                await self.SliceCopy(arr, gpusl)
+                await self.Recycle(gpusl)
+
+                return arr
+
+            async def DiscretisedField(self, quantity): 
+                return DiscretisedFieldMM(self, quantity, asynchronous=True)
         
-        return arr
+        self.NewSlice = NewSlice.__get__(self)
+        self.DiscretisedField = DiscretisedField.__get__(self)
+        self.SliceOf = SliceOf.__get__(self)
 
     def __enter__(self):
         return self
@@ -148,7 +184,7 @@ def makeType(master, vtype):
         self.identifier = identifier
 
     def destructor(self):
-        self.master.asrun(self.master.stub.DestroyMumax(self.identifier))
+        self.master.loop.run_until_complete(self.master.stub.DestroyMumax(self.identifier))
 
 
     classdict = {"__init__": constructor,
@@ -156,7 +192,7 @@ def makeType(master, vtype):
                  "__exit__": destructor, 
                   "master": master}
 
-    master.asrun(addMethods(master, vtype, classdict))
+    master.loop.run_until_complete(addMethods(master, vtype, classdict))
 
     master.typelist[vtype] = type(vtype, (object, ), classdict)
 
@@ -167,7 +203,7 @@ async def addMethods(master, vtype, classdict):
     async for identifier in identifiers:
         match identifier.WhichOneof("props"):
             case "f":
-                s = funcstrings.methodString(identifier.name, identifier.f.argnames, identifier.f.argtypes, identifier.f.outtypes, identifier.doc)
+                s = funcstrings.methodString(identifier.name, identifier.f.argnames, identifier.f.argtypes, identifier.f.outtypes, identifier.doc, master._asynchronous)
             case "l":
                 s = funcstrings.fieldString(identifier.name, identifier.l.type, identifier.doc)
             case "r":
@@ -188,7 +224,7 @@ class Slice(np.ndarray):
         arr = basearr.view(cls)
         arr.mumax_shape=(ncomp, nz, ny, nx)
         arr.master = master
-        arr.identifier = master.asrun(master.stub.NewSlice(mumax_pb2.Slice(ncomp=ncomp, nx=nx, ny=ny, nz=nz, file=name)))
+        arr.identifier = master.loop.run_until_complete(master.stub.NewSlice(mumax_pb2.Slice(ncomp=ncomp, nx=nx, ny=ny, nz=nz, file=name)))
         arr.shm = mem
         arr.maydestroy = True 
 
@@ -221,7 +257,7 @@ class Slice(np.ndarray):
     def destructor(self):
         #it is a niche edge case where mumax will still want access to a slice that python doesn't want.
         #so just ignore it.
-        self.master.asrun(self.master.stub.DestroyMumax(self.identifier))
+        self.master.loop.run_until_complete(self.master.stub.DestroyMumax(self.identifier))
         self.shm.unlink()
         self.shm.close()
 
@@ -231,7 +267,7 @@ class Slice(np.ndarray):
 
     def attach(self, master):
         self.master = master
-        self.identifier = master.asrun(master.stub.NewSlice(
+        self.identifier = master.run_until_complete(master.stub.NewSlice(
             mumax_pb2.Slice(ncomp=self.mumax_shape[0], 
                             nx=self.mumax_shape[1],
                             ny=self.mumax_shape[2],
@@ -240,29 +276,34 @@ class Slice(np.ndarray):
 
 class DiscretisedFieldMM(df.Field):
     __class__ = df.Field #little trick to make ubermag work
-    def __init__(self, master, quantity):
+    def __init__(self, master, quantity, asynchronous=False):
 
-        dim = quantity.NComp()
+        if asynchronous:
+            def r(f):
+                return master.loop.run_until_complete(f)
+            def r(f):
+                return f
+
+        dim = r(quantity.NComp())
 
         if hasattr(quantity, "Mesh"):
-            mesh = quantity.Mesh()
+            mesh = r(quantity.Mesh())
         else:
-            mesh = master.m.Mesh()
+            mesh = r(master.m.Mesh())
 
-        nx, ny, nz = mesh.Size()
+        nx, ny, nz = r(mesh.Size())
 
         ubermesh = df.Mesh(p1=[0,0,0], p2=mesh.WorldSize(), n=[nx, ny, nz])
         
         if hasattr(quantity, "Unit"):
-            unit = quantity.Unit()
+            unit = r(quantity.Unit())
         else:
             unit = "?"
 
-        arr = Slice(master, dim, nx, ny, nz)
-
-        gpusl = master.ValueOf(quantity)
-        master.SliceCopy(arr, gpusl)
-        master.Recycle(gpusl)
+        arr = r(self.NewSlice(dim, nx, ny, nz))
+        gpusl = r(self.ValueOf(quantity))
+        r(self.SliceCopy(arr, gpusl))
+        r(self.Recycle(gpusl))
 
         super().__init__(ubermesh, dim, value=np.moveaxis(arr, 0, 3) , dtype=np.float32, units=unit)
 
