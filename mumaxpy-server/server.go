@@ -29,7 +29,7 @@ func main() {
 		panic(err)
 	}
 
-	sigs := make(chan os.Signal)
+	sigs := make(chan os.Signal, 10)
 	signal.Notify(sigs, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		<-sigs
@@ -46,6 +46,7 @@ func main() {
 
 	grpcServer := grpc.NewServer(grpc.UnaryInterceptor(RecoveryUnaryInterceptor), grpc.StreamInterceptor(RecoveryStreamInterceptor))
 	server := &mumax{}
+	print("server here?")
 	pb.RegisterMumaxServer(grpcServer, server)
 	grpcServer.Serve(listener)
 

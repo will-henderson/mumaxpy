@@ -1,7 +1,7 @@
 import numpy as np
 import multiprocessing.shared_memory as shm
 from . import mumax_pb2
-import torch
+#import torch
 
 class Slice(np.ndarray):
 

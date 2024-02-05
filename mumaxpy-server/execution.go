@@ -64,7 +64,7 @@ func Execute(f func() interface{}) interface{} {
 	return resp.result
 }
 
-func device() {
+func device() int {
 	return *en.Flag_gpu
 }
 

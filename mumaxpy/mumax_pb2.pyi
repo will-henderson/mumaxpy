@@ -321,22 +321,16 @@ class Slice(_message.Message):
     file: str
     def __init__(self, ncomp: _Optional[int] = ..., nx: _Optional[int] = ..., ny: _Optional[int] = ..., nz: _Optional[int] = ..., file: _Optional[str] = ...) -> None: ...
 
-class GPUSliceRequest(_message.Message):
-    __slots__ = ("ncomp", "nx", "ny", "nz")
+class GPUSlice(_message.Message):
+    __slots__ = ("ncomp", "nx", "ny", "nz", "handle")
     NCOMP_FIELD_NUMBER: _ClassVar[int]
     NX_FIELD_NUMBER: _ClassVar[int]
     NY_FIELD_NUMBER: _ClassVar[int]
     NZ_FIELD_NUMBER: _ClassVar[int]
+    HANDLE_FIELD_NUMBER: _ClassVar[int]
     ncomp: int
     nx: int
     ny: int
     nz: int
-    def __init__(self, ncomp: _Optional[int] = ..., nx: _Optional[int] = ..., ny: _Optional[int] = ..., nz: _Optional[int] = ...) -> None: ...
-
-class GPUSlice(_message.Message):
-    __slots__ = ("mmobj", "handle")
-    MMOBJ_FIELD_NUMBER: _ClassVar[int]
-    HANDLE_FIELD_NUMBER: _ClassVar[int]
-    mmobj: MumaxObject
-    handle: _containers.RepeatedScalarFieldContainer[bytes]
-    def __init__(self, mmobj: _Optional[_Union[MumaxObject, _Mapping]] = ..., handle: _Optional[_Iterable[bytes]] = ...) -> None: ...
+    handle: bytes
+    def __init__(self, ncomp: _Optional[int] = ..., nx: _Optional[int] = ..., ny: _Optional[int] = ..., nz: _Optional[int] = ..., handle: _Optional[bytes] = ...) -> None: ...

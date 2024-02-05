@@ -74,7 +74,7 @@ class Mumax:
         time.sleep(1)
 
         self.typelist = dict()
-        self.loop.run_until_complete(self._populate_functions(asynchronous))
+        self.roc(self._populate_functions(asynchronous))
 
         self.scalarpyfuncs = []
         self.vectorpyfuncs = []
@@ -122,6 +122,9 @@ class Mumax:
                 self.Recycle(gpusl)
 
                 return arr
+            
+            def GPUSlice(self, ncomp, Nx, Ny, Nz):
+                return slices.GPUSlice(self, ncomp, Nx, Ny, Nz)
                 
         else:
             async def NewSlice(self, ncomp, Nx, Ny, Nz, cpu=True):
@@ -154,6 +157,7 @@ class Mumax:
         self.NewSlice = NewSlice.__get__(self)
         self.DiscretisedField = DiscretisedField.__get__(self)
         self.SliceOf = SliceOf.__get__(self)
+        self.GPUSlice = GPUSlice.__get__(self)
 
     def __enter__(self):
         return self

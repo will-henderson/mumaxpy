@@ -1,37 +1,28 @@
 package main
 
-import (
-	"context"
-	"reflect"
-	"unsafe"
-
-	"github.com/mumax/3/cuda"
-	"github.com/mumax/3/data"
-	pb "github.com/will-henderson/mumaxpy/protocol"
-)
-
-//#cgo CFLAGS: -I /usr/include
-//#cgo LDFLAGS: -L/usr/lib/x86_64-linux-gnu -lcuda -lcudart
-//// DOCKER IMAGE
-//#cgo CFLAGS: -I /usr/local/cuda-11.7/targets/x86_64-linux/include/
-//#cgo LDFLAGS:-L /usr/local/cuda-11.7/targets/x86_64-linux/lib/
-//#include <cuda.h>
-//#include <cuda_runtime_api.h>
+/*
 import "C"
 
 func (e *mumax) GPUSlice(ctx context.Context, in *pb.GPUSlice) (*pb.MumaxObject, error) {
 
-	compsize = in.Nx * in.Ny * in.Nz * 4
+	compsize := in.Nx * in.Ny * in.Nz * 4
 
-	var pointer
-	c_handle = C.cudaIpcMemHandle_t(in.handle)
+	if len(in.Handle) != C.CUDA_IPC_HANDLE_SIZE {
+		return nil, errors.New("gpu memory handle is not the right length, got" + strconv.Itoa(len(in.Handle)))
+	}
 
-	C.cudaIpcOpenMemHandle(&pointer, c_handle, C.uint(1))
-	originPtr := uintptr(*pointer2pointer) 
+	ptr := C.open_mem_handle(unsafe.Pointer(&in.Handle[0]))
+
+	fmt.Println("We apparently opened a memory handle")
+
+	originPtr := uintptr(ptr)
 
 	ptrs := make([]unsafe.Pointer, in.Ncomp)
+	for c := int64(0); c < in.Ncomp; c++ {
+		ptrs[c] = unsafe.Pointer(originPtr + uintptr(c*compsize))
+	}
 
-	sl := cuda.NewSlice(int(in.Ncomp), [3]int{int(in.Nx), int(in.Ny), int(in.Nz)})
+	sl := data.SliceFromPtrs([3]int{int(in.Nx), int(in.Ny), int(in.Nz)}, data.GPUMemory, ptrs)
 
 	return AddDynamicObject(reflect.ValueOf(sl)), nil
 }
@@ -54,3 +45,4 @@ func getHandles(sl *data.Slice) [][]byte {
 
 	return handle_bytes
 }
+*/
