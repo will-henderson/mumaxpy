@@ -18,9 +18,11 @@ class RevComHandler():
         async for request in self.requests:
             match request.WhichOneof("pyfunc"):
                 case "scalarpyfunc":
-                    yield self.scalarpyfuncs[request.scalarpyfunc]()
+                    val = self.scalarpyfuncs[request.scalarpyfunc]()
+                    yield mumax_pb2.RevComResult(scalar=val)
                 case "vectorpyfunc":
-                    yield self.vectorpyfuncs[request.vectorpyfunc]()
+                    val = self.vectorpyfuncs[request.vectorpyfunc]()
+                    yield mumax_pb2.RevComResult(vector=mumax_pb2.Vector(x=val[0], y=val[1], z=val[2]))
 
 async def Operation(operation, initialsend, master):
 

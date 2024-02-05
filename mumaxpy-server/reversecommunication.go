@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"io"
 
 	pb "github.com/will-henderson/mumaxpy/protocol"
@@ -42,7 +41,6 @@ func ScalarRevComRequester(stream pb.Mumax_ReverseCommunicationServer) error {
 		if request == -1 {
 			return nil
 		}
-		fmt.Println("WE HAVE A REQUEST!!", request)
 		stream.Send(&pb.RevComRequest{Pyfunc: &pb.RevComRequest_Scalarpyfunc{Scalarpyfunc: int64(request)}})
 
 		RevComRequests <- request

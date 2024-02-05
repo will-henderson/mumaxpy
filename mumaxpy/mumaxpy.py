@@ -97,15 +97,25 @@ class Mumax:
             return DiscretisedFieldMM(self, quantity)
         self.DiscretisedField = DiscretisedField.__get__(self)
 
+    #something that gets the same info as discretised field, but keeps the shared mem alive
+    def SliceOf(self, quantity):
+        
+        dim = quantity.NComp()
 
-    def Directory():
-        #this is a dictionary. The elements are the memory mapped files. I guess it could be writable. 
-        pass
+        if hasattr(quantity, "Mesh"):
+            mesh = quantity.Mesh()
+        else:
+            mesh = self.m.Mesh()
 
-    @property
-    def get_Table(self):
-        #check if lines or columns have been added to table, if so update.
-        pass
+        nx, ny, nz = mesh.Size()
+
+        arr = self.NewSlice(dim, nx, ny, nz)
+
+        gpusl = self.ValueOf(quantity)
+        self.SliceCopy(arr, gpusl)
+        self.Recycle(gpusl)
+        
+        return arr
 
     def __enter__(self):
         return self
@@ -268,14 +278,7 @@ def _makeScalarFunction(value, master):
             return mumax_pb2.ScalarFunction(gocode=value)
         
         elif callable(value): #this would be the python call
-            signat = signature(value)
-            if len(signat.parameters) == 0:
-                master.scalarpyfuncs.append(value)
-            elif len(signat.parameters) == 1:
-                master.scalarpyfuncs.append(lambda: value(master.t))
-            else:
-                raise TypeError("Python function must have either one or no arguments")
-            
+            _pyfunc_setup(master.scalarpyfuncs, value, master)
             return mumax_pb2.ScalarFunction(pyfunc=len(master.scalarpyfuncs) - 1)
         
         else:
@@ -295,19 +298,26 @@ def _makeVectorFunction(value, master):
     if isinstance(value, str):
          return mumax_pb2.VectorFunction(gocode=value)
     elif callable(value):
-        signat = signature(value)
-        if len(signat.parameters) == 0:
-            master.vectorpyfuncs.append(value)
-        elif len(signat.parameters) == 1:
-            master.vectorpyfuncs.append(lambda: value(master.t))
-        else:
-            raise TypeError("Python function must have either one or no arguments")
-        return mumax_pb2.VectorFunction(pyfunc=len(master.scalarpyfuncs) - 1)
+        _pyfunc_setup(master.vectorpyfuncs, value, master)
+        return mumax_pb2.VectorFunction(pyfunc=len(master.vectorpyfuncs) - 1)
     else:
         return mumax_pb2.VectorFunction(components=_makeScalarFunction3(value, master))
+    
+def _pyfunc_setup(pyfunc_list, value, master):
+    try:
+        signat = signature(value)
+        if len(signat.parameters) == 0:
+            pyfunc_list.append(value)
+        elif len(signat.parameters) == 1:
+            pyfunc_list.append(lambda: value(master.t))
+        else:
+            raise TypeError("Python function must have either one or no arguments")
+    except ValueError:
+        #signature didn't work. Just assume this is a one argument function then.
+        pyfunc_list.append(value)
 
 def _processArray(arr):
-    which = arr.WhichOneof('elements')
+    which = arr.WhichOneof('elements') 
 
     if which != 'a':
         return list(getattr(arr, which).s)
