@@ -19,13 +19,24 @@ import (
 //#include <cuda_runtime_api.h>
 import "C"
 
-func (e *mumax) GPUSlice(ctx context.Context, in *pb.GPUSliceRequest) (*pb.GPUSlice, error) {
-	sl := cuda.NewSlice(int(in.Ncomp), [3]int{int(in.Nx), int(in.Ny), int(in.Nz)})
-	handle := getHandles(sl)
-	mmobj := AddDynamicObject(reflect.ValueOf(sl))
+func (e *mumax) GPUSlice(ctx context.Context, in *pb.GPUSlice) (*pb.MumaxObject, error) {
 
-	return &pb.GPUSlice{Mmobj: mmobj, Handle: handle}, nil
+	compsize = in.Nx * in.Ny * in.Nz * 4
+
+	var pointer
+	c_handle = C.cudaIpcMemHandle_t(in.handle)
+
+	C.cudaIpcOpenMemHandle(&pointer, c_handle, C.uint(1))
+	originPtr := uintptr(*pointer2pointer) 
+
+	ptrs := make([]unsafe.Pointer, in.Ncomp)
+
+	sl := cuda.NewSlice(int(in.Ncomp), [3]int{int(in.Nx), int(in.Ny), int(in.Nz)})
+
+	return AddDynamicObject(reflect.ValueOf(sl)), nil
 }
+
+//probably want to check we free it correctly.
 
 func getHandles(sl *data.Slice) [][]byte {
 	//probably want to check that he lives on the GPU

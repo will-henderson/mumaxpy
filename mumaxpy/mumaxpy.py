@@ -10,13 +10,12 @@ import asyncio
 import time
 import numpy as np
 import discretisedfield as df
-import mmap
-import multiprocessing.shared_memory as shm
 from inspect import signature
 
 from . import funcstrings
 from . import revcom
 from . import jupyterhack
+from . import slices
 
 
 
@@ -102,7 +101,7 @@ class Mumax:
 
         if not asynchronous:    
             def NewSlice(self, ncomp, Nx, Ny, Nz):
-                return Slice(self, ncomp, Nx, Ny, Nz)
+                return slices.Slice(self, ncomp, Nx, Ny, Nz)
             
             def DiscretisedField(self, quantity):
                 return DiscretisedFieldMM(self, quantity, asynchronous=False)
@@ -125,10 +124,13 @@ class Mumax:
                 return arr
                 
         else:
-            async def NewSlice(self, ncomp, Nx, Ny, Nz):
+            async def NewSlice(self, ncomp, Nx, Ny, Nz, cpu=True):
                 #nothing async about this at all. but the numpy routines themselves aren't so can't improve this obviously. 
                 # Just for consistency with every other routine using async syntax.
-                return Slice(self, ncomp, Nx, Ny, Nz) 
+                if cpu:
+                    return slices.Slice(self, ncomp, Nx, Ny, Nz)
+                else:
+                    return slices.GPUSlice(self, ncomp, Nx, Ny, Nz)
 
             async def SliceOf(self, quantity):
                 dim = await quantity.NComp()
@@ -210,69 +212,6 @@ async def addMethods(master, vtype, classdict):
                 s = funcstrings.fieldString(identifier.name, identifier.r.type, identifier.doc)
         exec(s)
 
-class Slice(np.ndarray):
-
-    initialised = False
-
-    def __new__(cls, master, ncomp, nx, ny, nz):
-        nbytes = ncomp * nx * ny * nz * 4 # 4 bytes in float32
-        mem = shm.SharedMemory(create=True, size=nbytes)
-        name = mem._name
-        #then call make slice. 
-        basearr = np.ndarray(shape=(ncomp, nz, ny, nx), dtype=np.float32, buffer=mem.buf)
-        basearr = np.moveaxis(basearr, [0, 1, 2, 3], [0, 3, 2, 1])
-        arr = basearr.view(cls)
-        arr.mumax_shape=(ncomp, nz, ny, nx)
-        arr.master = master
-        arr.identifier = master.loop.run_until_complete(master.stub.NewSlice(mumax_pb2.Slice(ncomp=ncomp, nx=nx, ny=ny, nz=nz, file=name)))
-        arr.shm = mem
-        arr.maydestroy = True 
-
-        if not cls.initialised:
-            #addMethods(master, "*data.Slice", cls.__dict__) //this doesn't work, but don't really need it.
-            cls.initialised = True
-     
-        return arr
-
-    def __array_finalize__(self, arr):
-        if arr is None: return
-        self.master = getattr(arr, "master", None)
-        self.identifier = getattr(arr, "identifier", None)
-        self.shm = getattr(arr, "shm", None)
-        self.maydestroy = getattr(arr, "maydestroy", False)
-
-    def __array_wrap__(self, arr, context=None):
-        arr = super().__array_wrap__(arr, context)
-        arr.maydestroy=False
-
-        if self is arr or type(self) is not Slice:
-            return arr
-
-        if arr.shape == ():
-            return arr[()]
-        
-        return arr.view(np.ndarray)
-
-
-    def destructor(self):
-        #it is a niche edge case where mumax will still want access to a slice that python doesn't want.
-        #so just ignore it.
-        self.master.loop.run_until_complete(self.master.stub.DestroyMumax(self.identifier))
-        self.shm.unlink()
-        self.shm.close()
-
-    def __del__(self):
-        if not isinstance(self.base, Slice) and self.maydestroy:
-            self.destructor()
-
-    def attach(self, master):
-        self.master = master
-        self.identifier = master.run_until_complete(master.stub.NewSlice(
-            mumax_pb2.Slice(ncomp=self.mumax_shape[0], 
-                            nx=self.mumax_shape[1],
-                            ny=self.mumax_shape[2],
-                            nz=self.mumax_shape[3],
-                              file=self.shm._name)))
 
 class DiscretisedFieldMM(df.Field):
     __class__ = df.Field #little trick to make ubermag work
