@@ -1,9 +1,12 @@
 #include <cuda_runtime_api.h>
 #include <cuda.h>
+#include <stdio.h>
 
-void* open_mem_handle(void* handlebytes){
+ void* open_mem_handle(void* handlebytes, int* err){
     void* ptr;
     cudaIpcMemHandle_t handle = {*(char*)(handlebytes)};
-    cudaIpcOpenMemHandle(&ptr, handle, 1);
+
+    *err = (int)cudaIpcOpenMemHandle(&ptr, handle, cudaIpcMemLazyEnablePeerAccess);
     return ptr;
+
 }

@@ -8,7 +8,8 @@ import (
 	"strconv"
 	"unsafe"
 
-	"github.com/will-henderson/mumax/data"
+	"github.com/mumax/3/cuda"
+	"github.com/mumax/3/data"
 	pb "github.com/will-henderson/mumaxpy/protocol"
 )
 
@@ -24,14 +25,34 @@ func (e *mumax) NewGPUSlice(ctx context.Context, in *pb.GPUSlice) (*pb.MumaxObje
 
 	compsize := in.Nx * in.Ny * in.Nz * 4
 
+	//write well firstly this probably needs to come from the right context
+
 	if len(in.Handle) != C.CUDA_IPC_HANDLE_SIZE {
 		return nil, errors.New("gpu memory handle is not the right length, got" + strconv.Itoa(len(in.Handle)))
 	}
 
-	ptr := C.open_mem_handle(unsafe.Pointer(&in.Handle[0]))
+	//well, we need to call this from the right thread anyway
 
-	fmt.Println("We apparently opened a memory handle")
+	var err C.int
 
+	//try on stack?
+	var b_handle [64]byte
+	for i := 0; i < 64; i++ {
+		b_handle[i] = in.Handle[i]
+		fmt.Printf("%x", in.Handle[i])
+		fmt.Printf(" ")
+	}
+
+	//ptr := Execute(func() interface{} { return C.open_mem_handle(unsafe.Pointer(&b_handle[0]), &err) })
+	ptr := C.open_mem_handle(unsafe.Pointer(&b_handle[0]), &err)
+
+	if err != 0 {
+		print("there is an error:", err, ",     ")
+	} else {
+		print("no error apparently")
+	}
+
+	//originPtr := uintptr(ptr.(unsafe.Pointer))
 	originPtr := uintptr(ptr)
 
 	ptrs := make([]unsafe.Pointer, in.Ncomp)
@@ -40,6 +61,11 @@ func (e *mumax) NewGPUSlice(ctx context.Context, in *pb.GPUSlice) (*pb.MumaxObje
 	}
 
 	sl := data.SliceFromPtrs([3]int{int(in.Nx), int(in.Ny), int(in.Nz)}, data.GPUMemory, ptrs)
+
+	//lets do some tests here
+	print(sl.NComp())
+	print(sl.GPUAccess())
+	print(cuda.GetCell(sl, 0, 0, 0, 0))
 
 	return AddDynamicObject(reflect.ValueOf(sl)), nil
 }

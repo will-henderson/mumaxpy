@@ -6,7 +6,9 @@ import torch
 class GPUSlice:
     def __init__(self, master, ncomp, nx, ny, nz, gpu):
         self._t = torch.zeros(size=(ncomp, nz, ny, nx), dtype=torch.float32, device=torch.device('cuda', gpu))
-        self.handle = self._t.untyped_storage()._share_cuda_()[1]
+        self.handle = self._t.untyped_storage()._share_cuda_()[1] 
+        print(''.join('{:02x} '.format(x) for x in self.handle))
+        print(len(self.handle))
         self.master = master
         self.identifier = master.roc(master.stub.NewGPUSlice(
             mumax_pb2.GPUSlice(ncomp = ncomp, 

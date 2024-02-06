@@ -16,7 +16,7 @@ from inspect import signature
 from . import funcstrings
 from . import revcom
 from . import jupyterhack
-#from .slices import *
+from . import slices
 
 socket_address = "mumaxpy.sock"
 
@@ -53,18 +53,14 @@ class Mumax:
 
         try:
             self.loop = asyncio.get_event_loop()
-            self.roc = self.loop.run_until_complete
         except RuntimeError as e:
             if str(e).startswith('There is no current event loop in thread'):
                 self.loop = asyncio.new_event_loop()
                 asyncio.set_event_loop(self.loop)
-
-                #and this is the hack to make this keep working. 
-                self.roc = jupyterhack.roc(self.loop)
-                print('we defined our roc')
-
             else:
-                raise
+                raise 
+
+        self.roc = self.loop.run_until_complete
 
         socketpath = "unix:" + socket_address
         self.channel = grpc.aio.insecure_channel(socketpath, options=[
@@ -132,7 +128,7 @@ class Mumax:
                 return arr
             
             def NewGPUSlice(self, ncomp, Nx, Ny, Nz):
-                return GPUSlice(self, ncomp, Nx, Ny, Nz, self._gpu)
+                return slices.GPUSlice(self, ncomp, Nx, Ny, Nz, self._gpu)
                 
         else:
             async def NewSlice(self, ncomp, Nx, Ny, Nz, cpu=True):
@@ -141,7 +137,7 @@ class Mumax:
                 if cpu:
                     return Slice(self, ncomp, Nx, Ny, Nz)
                 else:
-                    return GPUSlice(self, ncomp, Nx, Ny, Nz, self._gpu)
+                    return slices.GPUSlice(self, ncomp, Nx, Ny, Nz, self._gpu)
 
             async def SliceOf(self, quantity):
                 dim = await quantity.NComp()
