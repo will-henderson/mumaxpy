@@ -3,12 +3,10 @@ package main
 import (
 	"context"
 	"errors"
-	"fmt"
 	"reflect"
 	"strconv"
 	"unsafe"
 
-	"github.com/mumax/3/cuda"
 	"github.com/mumax/3/data"
 	pb "github.com/will-henderson/mumaxpy/protocol"
 )
@@ -39,17 +37,16 @@ func (e *mumax) NewGPUSlice(ctx context.Context, in *pb.GPUSlice) (*pb.MumaxObje
 	var b_handle [64]byte
 	for i := 0; i < 64; i++ {
 		b_handle[i] = in.Handle[i]
-		fmt.Printf("%x", in.Handle[i])
-		fmt.Printf(" ")
 	}
 
 	//ptr := Execute(func() interface{} { return C.open_mem_handle(unsafe.Pointer(&b_handle[0]), &err) })
-	ptr := C.open_mem_handle(unsafe.Pointer(&b_handle[0]), &err)
+	bytestr := C.CString(string(in.Handle))
+	defer C.free(unsafe.Pointer(bytestr))
+	ptr := C.open_mem_handle((*C.char)(unsafe.Pointer(&in.Handle[0])), &err)
 
 	if err != 0 {
-		print("there is an error:", err, ",     ")
-	} else {
-		print("no error apparently")
+		//panic here!
+		print("fuck")
 	}
 
 	//originPtr := uintptr(ptr.(unsafe.Pointer))
@@ -61,11 +58,6 @@ func (e *mumax) NewGPUSlice(ctx context.Context, in *pb.GPUSlice) (*pb.MumaxObje
 	}
 
 	sl := data.SliceFromPtrs([3]int{int(in.Nx), int(in.Ny), int(in.Nz)}, data.GPUMemory, ptrs)
-
-	//lets do some tests here
-	print(sl.NComp())
-	print(sl.GPUAccess())
-	print(cuda.GetCell(sl, 0, 0, 0, 0))
 
 	return AddDynamicObject(reflect.ValueOf(sl)), nil
 }

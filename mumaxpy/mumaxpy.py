@@ -12,6 +12,7 @@ import numpy as np
 import multiprocessing.shared_memory as shm
 import discretisedfield as df
 from inspect import signature
+from numba import cuda
 
 from . import funcstrings
 from . import revcom
@@ -37,6 +38,7 @@ class Mumax:
         args.append(o)
         
         self._gpu = gpu
+        cuda.select_device(gpu)
         args.append("-gpu")
         args.append(str(gpu))
 
@@ -128,7 +130,7 @@ class Mumax:
                 return arr
             
             def NewGPUSlice(self, ncomp, Nx, Ny, Nz):
-                return slices.GPUSlice(self, ncomp, Nx, Ny, Nz, self._gpu)
+                return slices.GPUSlice(self, ncomp, Nx, Ny, Nz)
                 
         else:
             async def NewSlice(self, ncomp, Nx, Ny, Nz, cpu=True):
