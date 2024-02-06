@@ -139,6 +139,11 @@ class mumaxStub(object):
                 request_serializer=mumax__pb2.Slice.SerializeToString,
                 response_deserializer=mumax__pb2.MumaxObject.FromString,
                 )
+        self.NewGPUSlice = channel.unary_unary(
+                '/mumaxpy.mumax/NewGPUSlice',
+                request_serializer=mumax__pb2.GPUSlice.SerializeToString,
+                response_deserializer=mumax__pb2.MumaxObject.FromString,
+                )
 
 
 class mumaxServicer(object):
@@ -294,6 +299,12 @@ class mumaxServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def NewGPUSlice(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_mumaxServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -420,6 +431,11 @@ def add_mumaxServicer_to_server(servicer, server):
             'NewSlice': grpc.unary_unary_rpc_method_handler(
                     servicer.NewSlice,
                     request_deserializer=mumax__pb2.Slice.FromString,
+                    response_serializer=mumax__pb2.MumaxObject.SerializeToString,
+            ),
+            'NewGPUSlice': grpc.unary_unary_rpc_method_handler(
+                    servicer.NewGPUSlice,
+                    request_deserializer=mumax__pb2.GPUSlice.FromString,
                     response_serializer=mumax__pb2.MumaxObject.SerializeToString,
             ),
     }
@@ -853,6 +869,23 @@ class mumax(object):
             metadata=None):
         return grpc.experimental.unary_unary(request, target, '/mumaxpy.mumax/NewSlice',
             mumax__pb2.Slice.SerializeToString,
+            mumax__pb2.MumaxObject.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def NewGPUSlice(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/mumaxpy.mumax/NewGPUSlice',
+            mumax__pb2.GPUSlice.SerializeToString,
             mumax__pb2.MumaxObject.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

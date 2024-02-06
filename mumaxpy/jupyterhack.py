@@ -1,3 +1,4 @@
+import asyncio
 
 def is_notebook() -> bool:
     try:
@@ -5,7 +6,7 @@ def is_notebook() -> bool:
         if shell == 'ZMQInteractiveShell':
             return True   # Jupyter notebook or qtconsole
         elif shell == 'TerminalInteractiveShell':
-            return False  # Terminal running IPython
+            return True  # Terminal running IPython
         else:
             return False  # Other type (?)
     except NameError:
@@ -14,3 +15,5 @@ def is_notebook() -> bool:
 if is_notebook():
     import nest_asyncio
     nest_asyncio.apply()
+
+    

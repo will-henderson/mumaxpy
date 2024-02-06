@@ -47,6 +47,7 @@ type MumaxClient interface {
 	GetFieldMumax(ctx context.Context, in *MumaxField, opts ...grpc.CallOption) (*MumaxObject, error)
 	DestroyMumax(ctx context.Context, in *MumaxObject, opts ...grpc.CallOption) (*NULL, error)
 	NewSlice(ctx context.Context, in *Slice, opts ...grpc.CallOption) (*MumaxObject, error)
+	NewGPUSlice(ctx context.Context, in *GPUSlice, opts ...grpc.CallOption) (*MumaxObject, error)
 }
 
 type mumaxClient struct {
@@ -350,6 +351,15 @@ func (c *mumaxClient) NewSlice(ctx context.Context, in *Slice, opts ...grpc.Call
 	return out, nil
 }
 
+func (c *mumaxClient) NewGPUSlice(ctx context.Context, in *GPUSlice, opts ...grpc.CallOption) (*MumaxObject, error) {
+	out := new(MumaxObject)
+	err := c.cc.Invoke(ctx, "/mumaxpy.mumax/NewGPUSlice", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // MumaxServer is the server API for Mumax service.
 // All implementations must embed UnimplementedMumaxServer
 // for forward compatibility
@@ -379,6 +389,7 @@ type MumaxServer interface {
 	GetFieldMumax(context.Context, *MumaxField) (*MumaxObject, error)
 	DestroyMumax(context.Context, *MumaxObject) (*NULL, error)
 	NewSlice(context.Context, *Slice) (*MumaxObject, error)
+	NewGPUSlice(context.Context, *GPUSlice) (*MumaxObject, error)
 	mustEmbedUnimplementedMumaxServer()
 }
 
@@ -460,6 +471,9 @@ func (UnimplementedMumaxServer) DestroyMumax(context.Context, *MumaxObject) (*NU
 }
 func (UnimplementedMumaxServer) NewSlice(context.Context, *Slice) (*MumaxObject, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method NewSlice not implemented")
+}
+func (UnimplementedMumaxServer) NewGPUSlice(context.Context, *GPUSlice) (*MumaxObject, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method NewGPUSlice not implemented")
 }
 func (UnimplementedMumaxServer) mustEmbedUnimplementedMumaxServer() {}
 
@@ -938,6 +952,24 @@ func _Mumax_NewSlice_Handler(srv interface{}, ctx context.Context, dec func(inte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Mumax_NewGPUSlice_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GPUSlice)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MumaxServer).NewGPUSlice(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/mumaxpy.mumax/NewGPUSlice",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MumaxServer).NewGPUSlice(ctx, req.(*GPUSlice))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Mumax_ServiceDesc is the grpc.ServiceDesc for Mumax service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -1032,6 +1064,10 @@ var Mumax_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "NewSlice",
 			Handler:    _Mumax_NewSlice_Handler,
+		},
+		{
+			MethodName: "NewGPUSlice",
+			Handler:    _Mumax_NewGPUSlice_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

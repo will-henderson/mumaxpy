@@ -46,7 +46,6 @@ func main() {
 
 	grpcServer := grpc.NewServer(grpc.UnaryInterceptor(RecoveryUnaryInterceptor), grpc.StreamInterceptor(RecoveryStreamInterceptor))
 	server := &mumax{}
-	print("server here?")
 	pb.RegisterMumaxServer(grpcServer, server)
 	grpcServer.Serve(listener)
 

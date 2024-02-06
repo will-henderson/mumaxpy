@@ -9,22 +9,22 @@ import os
 import asyncio
 import time
 import numpy as np
+import multiprocessing.shared_memory as shm
 import discretisedfield as df
 from inspect import signature
 
 from . import funcstrings
 from . import revcom
 from . import jupyterhack
-from . import slices
-
-
-
+#from .slices import *
 
 socket_address = "mumaxpy.sock"
 
+##This is THE class
+
 class Mumax:
 
-    def __init__(self, o=None, asynchronous=False, **kwargs):
+    def __init__(self, o=None, gpu=0, asynchronous=False, **kwargs):
 
         #serverpath = os.path.join('/root', 'go', 'bin', 'mumaxpy-server')
         serverpath = os.path.join(os.path.expanduser('~'), 'go', 'bin', 'mumaxpy-server')
@@ -33,21 +33,36 @@ class Mumax:
             o = os.path.join(os.getcwd(), "mumax.out")
 
         self._output_directory = o
-        self._asynchronous = asynchronous
         args.append("-o")
         args.append(o)
+        
+        self._gpu = gpu
+        args.append("-gpu")
+        args.append(str(gpu))
+
         for k, v in kwargs.items():
             args.append("-" + k)
             args.append(str(v))
         self.server = subprocess.Popen(args)
 
         ##if running in ipython terminal, we need to start the event loop manually. 
+
+        #ok nevertheless ipython will continue to give an error if we communicate
+        #with the client in run_until_complete. 
+        #we can instead use create_task, and await inside run until complete
+
         try:
             self.loop = asyncio.get_event_loop()
+            self.roc = self.loop.run_until_complete
         except RuntimeError as e:
             if str(e).startswith('There is no current event loop in thread'):
                 self.loop = asyncio.new_event_loop()
                 asyncio.set_event_loop(self.loop)
+
+                #and this is the hack to make this keep working. 
+                self.roc = jupyterhack.roc(self.loop)
+                print('we defined our roc')
+
             else:
                 raise
 
@@ -57,14 +72,7 @@ class Mumax:
             ('grpc.max_receive_message_length', 1024**3)])
         self.stub = mumax_pb2_grpc.mumaxStub(self.channel)
 
-        if asynchronous:
-            async def run_coroutine(coroutine):
-                return await coroutine
-            self.asrun = run_coroutine
-        else:
-            self.asrun = self.loop.run_until_complete
-
-        self.roc = self.loop.run_until_complete
+        self._asynchronous = asynchronous
 
         signal.signal(signal.SIGINT, self.close)
         signal.signal(signal.SIGTERM, self.close)
@@ -101,7 +109,7 @@ class Mumax:
 
         if not asynchronous:    
             def NewSlice(self, ncomp, Nx, Ny, Nz):
-                return slices.Slice(self, ncomp, Nx, Ny, Nz)
+                return Slice(self, ncomp, Nx, Ny, Nz)
             
             def DiscretisedField(self, quantity):
                 return DiscretisedFieldMM(self, quantity, asynchronous=False)
@@ -123,17 +131,17 @@ class Mumax:
 
                 return arr
             
-            def GPUSlice(self, ncomp, Nx, Ny, Nz):
-                return slices.GPUSlice(self, ncomp, Nx, Ny, Nz)
+            def NewGPUSlice(self, ncomp, Nx, Ny, Nz):
+                return GPUSlice(self, ncomp, Nx, Ny, Nz, self._gpu)
                 
         else:
             async def NewSlice(self, ncomp, Nx, Ny, Nz, cpu=True):
                 #nothing async about this at all. but the numpy routines themselves aren't so can't improve this obviously. 
                 # Just for consistency with every other routine using async syntax.
                 if cpu:
-                    return slices.Slice(self, ncomp, Nx, Ny, Nz)
+                    return Slice(self, ncomp, Nx, Ny, Nz)
                 else:
-                    return slices.GPUSlice(self, ncomp, Nx, Ny, Nz)
+                    return GPUSlice(self, ncomp, Nx, Ny, Nz, self._gpu)
 
             async def SliceOf(self, quantity):
                 dim = await quantity.NComp()
@@ -157,7 +165,7 @@ class Mumax:
         self.NewSlice = NewSlice.__get__(self)
         self.DiscretisedField = DiscretisedField.__get__(self)
         self.SliceOf = SliceOf.__get__(self)
-        self.GPUSlice = GPUSlice.__get__(self)
+        self.NewGPUSlice = NewGPUSlice.__get__(self)
 
     def __enter__(self):
         return self
@@ -171,13 +179,13 @@ class Mumax:
     def close(self, sig=None, frame=None):
         
         self.server.send_signal(signal.SIGINT)
-        self.loop.run_until_complete(self.channel.close())
+        self.roc(self.channel.close())
 
     def eval(self, cmd):
         if not isinstance(cmd, str):
             pass #this is an error 
         
-        self.loop.run_until_complete(self.stub.Eval(mumax_pb2.STRING(s=cmd)))
+        self.roc(self.stub.Eval(mumax_pb2.STRING(s=cmd)))
 
 def toObj(identifier, vtype, master):
     if vtype not in master.typelist:
@@ -190,7 +198,7 @@ def makeType(master, vtype):
         self.identifier = identifier
 
     def destructor(self):
-        self.master.loop.run_until_complete(self.master.stub.DestroyMumax(self.identifier))
+        self.master.roc(self.master.stub.DestroyMumax(self.identifier))
 
 
     classdict = {"__init__": constructor,
@@ -198,7 +206,7 @@ def makeType(master, vtype):
                  "__exit__": destructor, 
                   "master": master}
 
-    master.loop.run_until_complete(addMethods(master, vtype, classdict))
+    master.roc(addMethods(master, vtype, classdict))
 
     master.typelist[vtype] = type(vtype, (object, ), classdict)
 
@@ -216,6 +224,74 @@ async def addMethods(master, vtype, classdict):
                 s = funcstrings.fieldString(identifier.name, identifier.r.type, identifier.doc)
         exec(s)
 
+class Slice(np.ndarray):
+
+    initialised = False
+
+    def __new__(cls, master, ncomp, nx, ny, nz):
+        nbytes = ncomp * nx * ny * nz * 4 # 4 bytes in float32
+        mem = shm.SharedMemory(create=True, size=nbytes)
+        name = mem._name
+        #then make slice. 
+        basearr = np.ndarray(shape=(ncomp, nz, ny, nx), dtype=np.float32, buffer=mem.buf)
+        basearr = np.moveaxis(basearr, [0, 1, 2, 3], [0, 3, 2, 1])
+        arr = basearr.view(cls)
+        arr.mumax_shape=(ncomp, nz, ny, nx)
+        arr.master = master
+        arr.identifier = master.roc(master.stub.NewSlice(mumax_pb2.Slice(ncomp=ncomp, nx=nx, ny=ny, nz=nz, file=name)))
+        arr.shm = mem
+        arr.maydestroy = True 
+
+        if not cls.initialised:
+            #addMethods(master, "*data.Slice", cls.__dict__) //this doesn't work, but don't really need it.
+            cls.initialised = True
+     
+        return arr
+
+    def __array_finalize__(self, arr):
+        if arr is None: return
+        self.master = getattr(arr, "master", None)
+        self.identifier = getattr(arr, "identifier", None)
+        self.shm = getattr(arr, "shm", None)
+        self.maydestroy = getattr(arr, "maydestroy", False)
+
+    def __array_wrap__(self, arr, context=None):
+        arr = super().__array_wrap__(arr, context)
+        arr.maydestroy=False
+
+        if self is arr or type(self) is not Slice:
+            return arr
+
+        if arr.shape == ():
+            return arr[()]
+        
+        return arr.view(np.ndarray)
+
+
+    def destructor(self):
+        #it is a niche edge case where mumax will still want access to a slice that python doesn't want.
+        #so just ignore it.
+        self.shm.unlink()
+        self.shm.close()
+        try:
+            self.master.roc(self.master.stub.DestroyMumax(self.identifier))
+        except:
+            pass
+
+
+    def __del__(self):
+        if not isinstance(self.base, Slice) and self.maydestroy:
+            self.destructor()
+
+    def attach(self, master):
+        self.master = master
+        self.identifier = master.roc(master.stub.NewSlice(
+            mumax_pb2.Slice(ncomp=self.mumax_shape[0], 
+                            nx=self.mumax_shape[1],
+                            ny=self.mumax_shape[2],
+                            nz=self.mumax_shape[3],
+                              file=self.shm._name)))
+
 
 class DiscretisedFieldMM(df.Field):
     __class__ = df.Field #little trick to make ubermag work
@@ -223,7 +299,7 @@ class DiscretisedFieldMM(df.Field):
 
         if asynchronous:
             def r(f):
-                return master.loop.run_until_complete(f)
+                return master.roc(f)
             def r(f):
                 return f
 

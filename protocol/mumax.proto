@@ -254,5 +254,5 @@ service mumax {
     rpc DestroyMumax(MumaxObject) returns (NULL) {}
 
     rpc NewSlice(Slice) returns (MumaxObject) {}
-//    rpc NewGPUSlice(GPUSlice) returns (MumaxObject) {}
+    rpc NewGPUSlice(GPUSlice) returns (MumaxObject) {}
 }

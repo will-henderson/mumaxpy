@@ -64,13 +64,8 @@ func Execute(f func() interface{}) interface{} {
 	return resp.result
 }
 
-func device() int {
-	return *en.Flag_gpu
-}
-
 func extraDeclarations() {
 	en.DeclFunc("SliceCopy", data.Copy, "copies data from one slice into another")
 	en.DeclFunc("Recycle", cuda.Recycle, "returns a buffer obtained from GetBuffer to the pool")
 	en.DeclFunc("ValueOf", en.ValueOf, "returns the GPU slice representation of a quantity")
-	en.DeclFunc("Device", device, "returns the cuda device number")
 }

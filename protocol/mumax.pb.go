@@ -2616,7 +2616,7 @@ var file_mumax_proto_rawDesc = []byte{
 	0x03, 0x52, 0x02, 0x6e, 0x78, 0x12, 0x0e, 0x0a, 0x02, 0x6e, 0x79, 0x18, 0x03, 0x20, 0x01, 0x28,
 	0x03, 0x52, 0x02, 0x6e, 0x79, 0x12, 0x0e, 0x0a, 0x02, 0x6e, 0x7a, 0x18, 0x04, 0x20, 0x01, 0x28,
 	0x03, 0x52, 0x02, 0x6e, 0x7a, 0x12, 0x16, 0x0a, 0x06, 0x68, 0x61, 0x6e, 0x64, 0x6c, 0x65, 0x18,
-	0x05, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x06, 0x68, 0x61, 0x6e, 0x64, 0x6c, 0x65, 0x32, 0xde, 0x0a,
+	0x05, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x06, 0x68, 0x61, 0x6e, 0x64, 0x6c, 0x65, 0x32, 0x98, 0x0b,
 	0x0a, 0x05, 0x6d, 0x75, 0x6d, 0x61, 0x78, 0x12, 0x28, 0x0a, 0x04, 0x45, 0x76, 0x61, 0x6c, 0x12,
 	0x0f, 0x2e, 0x6d, 0x75, 0x6d, 0x61, 0x78, 0x70, 0x79, 0x2e, 0x53, 0x54, 0x52, 0x49, 0x4e, 0x47,
 	0x1a, 0x0d, 0x2e, 0x6d, 0x75, 0x6d, 0x61, 0x78, 0x70, 0x79, 0x2e, 0x4e, 0x55, 0x4c, 0x4c, 0x22,
@@ -2702,8 +2702,12 @@ var file_mumax_proto_rawDesc = []byte{
 	0x78, 0x70, 0x79, 0x2e, 0x4e, 0x55, 0x4c, 0x4c, 0x22, 0x00, 0x12, 0x32, 0x0a, 0x08, 0x4e, 0x65,
 	0x77, 0x53, 0x6c, 0x69, 0x63, 0x65, 0x12, 0x0e, 0x2e, 0x6d, 0x75, 0x6d, 0x61, 0x78, 0x70, 0x79,
 	0x2e, 0x53, 0x6c, 0x69, 0x63, 0x65, 0x1a, 0x14, 0x2e, 0x6d, 0x75, 0x6d, 0x61, 0x78, 0x70, 0x79,
-	0x2e, 0x4d, 0x75, 0x6d, 0x61, 0x78, 0x4f, 0x62, 0x6a, 0x65, 0x63, 0x74, 0x22, 0x00, 0x42, 0x03,
-	0x5a, 0x01, 0x2e, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x2e, 0x4d, 0x75, 0x6d, 0x61, 0x78, 0x4f, 0x62, 0x6a, 0x65, 0x63, 0x74, 0x22, 0x00, 0x12, 0x38,
+	0x0a, 0x0b, 0x4e, 0x65, 0x77, 0x47, 0x50, 0x55, 0x53, 0x6c, 0x69, 0x63, 0x65, 0x12, 0x11, 0x2e,
+	0x6d, 0x75, 0x6d, 0x61, 0x78, 0x70, 0x79, 0x2e, 0x47, 0x50, 0x55, 0x53, 0x6c, 0x69, 0x63, 0x65,
+	0x1a, 0x14, 0x2e, 0x6d, 0x75, 0x6d, 0x61, 0x78, 0x70, 0x79, 0x2e, 0x4d, 0x75, 0x6d, 0x61, 0x78,
+	0x4f, 0x62, 0x6a, 0x65, 0x63, 0x74, 0x22, 0x00, 0x42, 0x03, 0x5a, 0x01, 0x2e, 0x62, 0x06, 0x70,
+	0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -2819,33 +2823,35 @@ var file_mumax_proto_depIdxs = []int32{
 	23, // 57: mumaxpy.mumax.GetFieldMumax:input_type -> mumaxpy.MumaxField
 	13, // 58: mumaxpy.mumax.DestroyMumax:input_type -> mumaxpy.MumaxObject
 	35, // 59: mumaxpy.mumax.NewSlice:input_type -> mumaxpy.Slice
-	0,  // 60: mumaxpy.mumax.Eval:output_type -> mumaxpy.NULL
-	12, // 61: mumaxpy.mumax.GetIdentifiers:output_type -> mumaxpy.Identifier
-	12, // 62: mumaxpy.mumax.GetTypeInfo:output_type -> mumaxpy.Identifier
-	18, // 63: mumaxpy.mumax.Call:output_type -> mumaxpy.CallResponse
-	18, // 64: mumaxpy.mumax.CallMethod:output_type -> mumaxpy.CallResponse
-	19, // 65: mumaxpy.mumax.ReverseCommunication:output_type -> mumaxpy.RevComRequest
-	3,  // 66: mumaxpy.mumax.GetBool:output_type -> mumaxpy.BOOL
-	5,  // 67: mumaxpy.mumax.GetInt:output_type -> mumaxpy.INT
-	1,  // 68: mumaxpy.mumax.GetString:output_type -> mumaxpy.STRING
-	7,  // 69: mumaxpy.mumax.GetDouble:output_type -> mumaxpy.DOUBLE
-	0,  // 70: mumaxpy.mumax.SetBool:output_type -> mumaxpy.NULL
-	0,  // 71: mumaxpy.mumax.SetInt:output_type -> mumaxpy.NULL
-	0,  // 72: mumaxpy.mumax.SetDouble:output_type -> mumaxpy.NULL
-	0,  // 73: mumaxpy.mumax.SetString:output_type -> mumaxpy.NULL
-	0,  // 74: mumaxpy.mumax.SetVector:output_type -> mumaxpy.NULL
-	0,  // 75: mumaxpy.mumax.SetScalarFunction:output_type -> mumaxpy.NULL
-	0,  // 76: mumaxpy.mumax.SetVectorFunction:output_type -> mumaxpy.NULL
-	0,  // 77: mumaxpy.mumax.SetMumax:output_type -> mumaxpy.NULL
-	3,  // 78: mumaxpy.mumax.GetFieldBool:output_type -> mumaxpy.BOOL
-	5,  // 79: mumaxpy.mumax.GetFieldInt:output_type -> mumaxpy.INT
-	1,  // 80: mumaxpy.mumax.GetFieldString:output_type -> mumaxpy.STRING
-	7,  // 81: mumaxpy.mumax.GetFieldDouble:output_type -> mumaxpy.DOUBLE
-	13, // 82: mumaxpy.mumax.GetFieldMumax:output_type -> mumaxpy.MumaxObject
-	0,  // 83: mumaxpy.mumax.DestroyMumax:output_type -> mumaxpy.NULL
-	13, // 84: mumaxpy.mumax.NewSlice:output_type -> mumaxpy.MumaxObject
-	60, // [60:85] is the sub-list for method output_type
-	35, // [35:60] is the sub-list for method input_type
+	36, // 60: mumaxpy.mumax.NewGPUSlice:input_type -> mumaxpy.GPUSlice
+	0,  // 61: mumaxpy.mumax.Eval:output_type -> mumaxpy.NULL
+	12, // 62: mumaxpy.mumax.GetIdentifiers:output_type -> mumaxpy.Identifier
+	12, // 63: mumaxpy.mumax.GetTypeInfo:output_type -> mumaxpy.Identifier
+	18, // 64: mumaxpy.mumax.Call:output_type -> mumaxpy.CallResponse
+	18, // 65: mumaxpy.mumax.CallMethod:output_type -> mumaxpy.CallResponse
+	19, // 66: mumaxpy.mumax.ReverseCommunication:output_type -> mumaxpy.RevComRequest
+	3,  // 67: mumaxpy.mumax.GetBool:output_type -> mumaxpy.BOOL
+	5,  // 68: mumaxpy.mumax.GetInt:output_type -> mumaxpy.INT
+	1,  // 69: mumaxpy.mumax.GetString:output_type -> mumaxpy.STRING
+	7,  // 70: mumaxpy.mumax.GetDouble:output_type -> mumaxpy.DOUBLE
+	0,  // 71: mumaxpy.mumax.SetBool:output_type -> mumaxpy.NULL
+	0,  // 72: mumaxpy.mumax.SetInt:output_type -> mumaxpy.NULL
+	0,  // 73: mumaxpy.mumax.SetDouble:output_type -> mumaxpy.NULL
+	0,  // 74: mumaxpy.mumax.SetString:output_type -> mumaxpy.NULL
+	0,  // 75: mumaxpy.mumax.SetVector:output_type -> mumaxpy.NULL
+	0,  // 76: mumaxpy.mumax.SetScalarFunction:output_type -> mumaxpy.NULL
+	0,  // 77: mumaxpy.mumax.SetVectorFunction:output_type -> mumaxpy.NULL
+	0,  // 78: mumaxpy.mumax.SetMumax:output_type -> mumaxpy.NULL
+	3,  // 79: mumaxpy.mumax.GetFieldBool:output_type -> mumaxpy.BOOL
+	5,  // 80: mumaxpy.mumax.GetFieldInt:output_type -> mumaxpy.INT
+	1,  // 81: mumaxpy.mumax.GetFieldString:output_type -> mumaxpy.STRING
+	7,  // 82: mumaxpy.mumax.GetFieldDouble:output_type -> mumaxpy.DOUBLE
+	13, // 83: mumaxpy.mumax.GetFieldMumax:output_type -> mumaxpy.MumaxObject
+	0,  // 84: mumaxpy.mumax.DestroyMumax:output_type -> mumaxpy.NULL
+	13, // 85: mumaxpy.mumax.NewSlice:output_type -> mumaxpy.MumaxObject
+	13, // 86: mumaxpy.mumax.NewGPUSlice:output_type -> mumaxpy.MumaxObject
+	61, // [61:87] is the sub-list for method output_type
+	35, // [35:61] is the sub-list for method input_type
 	35, // [35:35] is the sub-list for extension type_name
 	35, // [35:35] is the sub-list for extension extendee
 	0,  // [0:35] is the sub-list for field type_name
