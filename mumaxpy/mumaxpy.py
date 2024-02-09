@@ -10,7 +10,6 @@ import asyncio
 import time
 import numpy as np
 import multiprocessing.shared_memory as shm
-import discretisedfield as df
 from inspect import signature
 from numba import cuda
 
@@ -104,15 +103,22 @@ class Mumax:
         #however, we now modify the new slice function to work in shared memory. 
         # we do these here so that the previous population doesn't overwrite. 
         # also, for consistency I guess we should define these asyncly. 
+            
+        def _newslice(self, ncomp, Nx, Ny, Nz, gpu):
+            if not gpu:
+                return slices.Slice(self, ncomp, Nx, Ny, Nz)
+            else:
+                return slices.GPUSlice(self, ncomp, Nx, Ny, Nz)
 
+            
         if not asynchronous:    
-            def NewSlice(self, ncomp, Nx, Ny, Nz):
-                return Slice(self, ncomp, Nx, Ny, Nz)
+            def NewSlice(self, ncomp, Nx, Ny, Nz, gpu=False):
+                return _newslice(self, ncomp, Nx, Ny, Nz, gpu)
             
             def DiscretisedField(self, quantity):
-                return DiscretisedFieldMM(self, quantity, asynchronous=False)
+                return slices.DiscretisedFieldMM(self, quantity, asynchronous=False)
             
-            def SliceOf(self, quantity):
+            def SliceOf(self, quantity, gpu=False):
                 #slice of gets the same info as discretised field, but by avoiding discretisedfields wrapping we keep the shared me alive.
                 dim = quantity.NComp()
                 if hasattr(quantity, "Mesh"):
@@ -122,26 +128,24 @@ class Mumax:
 
                 nx, ny, nz = mesh.Size()
 
-                arr = self.NewSlice(dim, nx, ny, nz)
-                gpusl = self.ValueOf(quantity)
-                self.SliceCopy(arr, gpusl)
-                self.Recycle(gpusl)
+                if not gpu:
+                    arr = self.NewSlice(dim, nx, ny, nz, gpu)
+                    gpusl = self.ValueOf(quantity)
+                    self.SliceCopy(arr, gpusl)
+                    self.Recycle(gpusl)
+                else:
+                    arr = self.NewSlice(dim, nx, ny, nz, gpu)
+                    quantity.EvalTo(arr)
 
                 return arr
-            
-            def NewGPUSlice(self, ncomp, Nx, Ny, Nz):
-                return slices.GPUSlice(self, ncomp, Nx, Ny, Nz)
                 
         else:
-            async def NewSlice(self, ncomp, Nx, Ny, Nz, cpu=True):
+            async def NewSlice(self, ncomp, Nx, Ny, Nz, gpu=False):
                 #nothing async about this at all. but the numpy routines themselves aren't so can't improve this obviously. 
                 # Just for consistency with every other routine using async syntax.
-                if cpu:
-                    return Slice(self, ncomp, Nx, Ny, Nz)
-                else:
-                    return slices.GPUSlice(self, ncomp, Nx, Ny, Nz, self._gpu)
+                return _newslice(self, ncomp, Nx, Ny, Nz, gpu)
 
-            async def SliceOf(self, quantity):
+            async def SliceOf(self, quantity, gpu=False):
                 dim = await quantity.NComp()
                 if hasattr(quantity, "Mesh"):
                     mesh = await quantity.Mesh()
@@ -150,20 +154,23 @@ class Mumax:
 
                 nx, ny, nz = await mesh.Size()
 
-                arr = await self.NewSlice(dim, nx, ny, nz)
-                gpusl = await self.ValueOf(quantity)
-                await self.SliceCopy(arr, gpusl)
-                await self.Recycle(gpusl)
+                if not gpu:
+                    arr = await self.NewSlice(dim, nx, ny, nz, gpu)
+                    gpusl = await self.ValueOf(quantity)
+                    await self.SliceCopy(arr, gpusl)
+                    await self.Recycle(gpusl)
+                else:
+                    arr = self.NewSlice(dim, nx, ny, nz, gpu)
+                    quantity.EvalTo(arr)
 
                 return arr
 
             async def DiscretisedField(self, quantity): 
-                return DiscretisedFieldMM(self, quantity, asynchronous=True)
+                return slices.DiscretisedFieldMM(self, quantity, asynchronous=True)
         
         self.NewSlice = NewSlice.__get__(self)
         self.DiscretisedField = DiscretisedField.__get__(self)
         self.SliceOf = SliceOf.__get__(self)
-        self.NewGPUSlice = NewGPUSlice.__get__(self)
 
     def __enter__(self):
         return self
@@ -221,108 +228,6 @@ async def addMethods(master, vtype, classdict):
             case "r":
                 s = funcstrings.fieldString(identifier.name, identifier.r.type, identifier.doc)
         exec(s)
-
-class Slice(np.ndarray):
-
-    initialised = False
-
-    def __new__(cls, master, ncomp, nx, ny, nz):
-        nbytes = ncomp * nx * ny * nz * 4 # 4 bytes in float32
-        mem = shm.SharedMemory(create=True, size=nbytes)
-        name = mem._name
-        #then make slice. 
-        basearr = np.ndarray(shape=(ncomp, nz, ny, nx), dtype=np.float32, buffer=mem.buf)
-        basearr = np.moveaxis(basearr, [0, 1, 2, 3], [0, 3, 2, 1])
-        arr = basearr.view(cls)
-        arr.mumax_shape=(ncomp, nz, ny, nx)
-        arr.master = master
-        arr.identifier = master.roc(master.stub.NewSlice(mumax_pb2.Slice(ncomp=ncomp, nx=nx, ny=ny, nz=nz, file=name)))
-        arr.shm = mem
-        arr.maydestroy = True 
-
-        if not cls.initialised:
-            #addMethods(master, "*data.Slice", cls.__dict__) //this doesn't work, but don't really need it.
-            cls.initialised = True
-     
-        return arr
-
-    def __array_finalize__(self, arr):
-        if arr is None: return
-        self.master = getattr(arr, "master", None)
-        self.identifier = getattr(arr, "identifier", None)
-        self.shm = getattr(arr, "shm", None)
-        self.maydestroy = getattr(arr, "maydestroy", False)
-
-    def __array_wrap__(self, arr, context=None):
-        arr = super().__array_wrap__(arr, context)
-        arr.maydestroy=False
-
-        if self is arr or type(self) is not Slice:
-            return arr
-
-        if arr.shape == ():
-            return arr[()]
-        
-        return arr.view(np.ndarray)
-
-
-    def destructor(self):
-        #it is a niche edge case where mumax will still want access to a slice that python doesn't want.
-        #so just ignore it.
-        self.shm.unlink()
-        self.shm.close()
-        try:
-            self.master.roc(self.master.stub.DestroyMumax(self.identifier))
-        except:
-            pass
-
-
-    def __del__(self):
-        if not isinstance(self.base, Slice) and self.maydestroy:
-            self.destructor()
-
-    def attach(self, master):
-        self.master = master
-        self.identifier = master.roc(master.stub.NewSlice(
-            mumax_pb2.Slice(ncomp=self.mumax_shape[0], 
-                            nx=self.mumax_shape[1],
-                            ny=self.mumax_shape[2],
-                            nz=self.mumax_shape[3],
-                              file=self.shm._name)))
-
-
-class DiscretisedFieldMM(df.Field):
-    __class__ = df.Field #little trick to make ubermag work
-    def __init__(self, master, quantity, asynchronous=False):
-
-        if asynchronous:
-            def r(f):
-                return master.roc(f)
-            def r(f):
-                return f
-
-        dim = r(quantity.NComp())
-
-        if hasattr(quantity, "Mesh"):
-            mesh = r(quantity.Mesh())
-        else:
-            mesh = r(master.m.Mesh())
-
-        nx, ny, nz = r(mesh.Size())
-
-        ubermesh = df.Mesh(p1=[0,0,0], p2=mesh.WorldSize(), n=[nx, ny, nz])
-        
-        if hasattr(quantity, "Unit"):
-            unit = r(quantity.Unit())
-        else:
-            unit = "?"
-
-        arr = r(self.NewSlice(dim, nx, ny, nz))
-        gpusl = r(self.ValueOf(quantity))
-        r(self.SliceCopy(arr, gpusl))
-        r(self.Recycle(gpusl))
-
-        super().__init__(ubermesh, dim, value=np.moveaxis(arr, 0, 3) , dtype=np.float32, units=unit)
 
 def _pam(mmobj):
     return mmobj.identifier

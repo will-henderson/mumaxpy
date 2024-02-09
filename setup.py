@@ -11,7 +11,8 @@ setuptools.setup(
         'numpy',
         'grpcio',
         'grpcio-tools',
-        'ubermag'
+        'ubermag',
+        'numba'
     ],
     py_modules=["mumaxpy"],
     package_dir={'':'.'},
