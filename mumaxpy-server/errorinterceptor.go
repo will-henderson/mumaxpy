@@ -43,6 +43,6 @@ type PanicError struct {
 }
 
 func (e *PanicError) Error() string {
-	return fmt.Sprintf("panic caught: %v\n\n%s", e.Panic, e.Stack)
+	return fmt.Sprintf("panic caught: %v\n\n%s", e.Panic, e.Stack) //useful in development but over-verbose
 	//return fmt.Sprintf("panic caught: %v", e.Panic)
 }

@@ -66,21 +66,35 @@ func (e *mumax) GetIdentifiers(in *pb.NULL, stream pb.Mumax_GetIdentifiersServer
 func (e *mumax) GetTypeInfo(in *pb.STRING, stream pb.Mumax_GetTypeInfoServer) error {
 
 	t := typeMap[in.S]
+	print("element", t.Elem())
 	t = baseElem(t)
 
-	for i := 0; i < t.NumMethod(); i++ {
-		err := sendMethodIdentifier(t.Method(i), stream)
-		if err != nil {
-			return err
-		}
-	}
+	if t.Kind() != reflect.Interface {
 
-	tptr := reflect.PointerTo(t)
-	for i := 0; i < tptr.NumMethod(); i++ {
-		err := sendMethodIdentifier(tptr.Method(i), stream)
-		if err != nil {
-			return err
+		for i := 0; i < t.NumMethod(); i++ {
+			err := sendMethodIdentifier(t.Method(i), stream)
+			if err != nil {
+				return err
+			}
 		}
+
+		tptr := reflect.PointerTo(t)
+		for i := 0; i < tptr.NumMethod(); i++ {
+			err := sendMethodIdentifier(tptr.Method(i), stream)
+			if err != nil {
+				return err
+			}
+		}
+	} else {
+
+		//ok we need to deal with interfaces here
+		print(t.Kind())
+		print(t.Name())
+		print(t.Elem())
+		for i := 0; i < t.NumMethod(); i++ {
+			print(t.Method(i).Name)
+		}
+
 	}
 
 	if t.Kind() == reflect.Struct {
@@ -110,6 +124,7 @@ func (e *mumax) GetTypeInfo(in *pb.STRING, stream pb.Mumax_GetTypeInfoServer) er
 }
 
 func sendMethodIdentifier(method reflect.Method, stream pb.Mumax_GetTypeInfoServer) error {
+
 	names, types, outtypes, docComment := documentation.DocForFunc(method.Func, true)
 	identifier := &pb.Identifier{
 		Name: method.Name,

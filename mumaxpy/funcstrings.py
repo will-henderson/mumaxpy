@@ -122,7 +122,8 @@ def functionString(name, argnames, argtypes, outtypes, doc, asynchronous):
     s += functionCall(name.lower(), argnames, argtypes, True)
     s += "    reply = " + asrun("revcom.Operation(self.stub.Call, fc, self)") + "\n"
     s += returnLine(outtypes, True)
-    s += "self." + name + " = f.__get__(self)"  
+    #s += "self." + name + " = f.__get__(self)"  ##no I want to define on class rather than instance
+    s += "self.__class__." + name + " = f"
     return s
 
 
@@ -222,7 +223,7 @@ def getString(name, vtype):
 def rOnlyString(name, vtype, doc):
 
     s = getString(name, vtype)
-    s += "Mumax." + name + " = property("
+    s += "self.__class__." + name + " = property("
     s += "fget=get, "
     s += "doc='" + doc.replace("'", "\\'") + "')"
 
@@ -231,7 +232,7 @@ def rOnlyString(name, vtype, doc):
 def lValueString(name, vtype, intype, doc):
 
     s = getString(name, vtype) + lValueSetString(name, intype)
-    s += "Mumax." + name + " = property("
+    s += "self.__class__." + name + " = property("
     s += "fget=get, fset=set, "
     s += "doc='" + doc.replace("'", "\\'") + "')"
 

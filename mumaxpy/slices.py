@@ -27,7 +27,6 @@ class GPUSlice(cuda.cudadrv.devicearray.DeviceNDArray):
                 ny=self.shape[2], 
                 nz=self.shape[3], handle=self.handle)))
 
-
 class Slice(np.ndarray):
 
     initialised = False

@@ -14,6 +14,6 @@ setuptools.setup(
         'ubermag',
         'numba'
     ],
-    py_modules=["mumaxpy"],
+    py_modules=["mumaxpy", "mumaxpy.auto"],
     package_dir={'':'.'},
 )

@@ -25,6 +25,8 @@ socket_address = "mumaxpy.sock"
 
 class Mumax:
 
+    _initialised_methods = False
+
     def __init__(self, o=None, gpu=0, asynchronous=False, **kwargs):
 
         #serverpath = os.path.join('/root', 'go', 'bin', 'mumaxpy-server')
@@ -80,7 +82,10 @@ class Mumax:
         time.sleep(1)
 
         self.typelist = dict()
-        self.roc(self._populate_functions(asynchronous))
+
+        if not Mumax._initialised_methods:
+            self.roc(self._populate_functions(asynchronous))
+            Mumax._initialised_methods = True
 
         self.scalarpyfuncs = []
         self.vectorpyfuncs = []
@@ -275,7 +280,7 @@ def _makeQuantityFunction(value, master):
     elif hasattr(value, "identifier"):
         return mumax_pb2.Quantity(mmobj=value)
     elif quantity.isquantity(value):
-        master.pyquants.append()
+        master.pyquants.append(value.__call__)
         
     elif callable(value):
         raise TypeError("it appears you have tried to pass a python function, \
