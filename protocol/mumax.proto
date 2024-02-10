@@ -84,6 +84,7 @@ message FunctionCall {
     repeated MumaxObject argMumax = 6;
     repeated ScalarFunction argScalarFunction = 7;
     repeated VectorFunction argVectorFunction = 8; 
+    repeated Quantity argQuantity = 9;
 }
 
 message Array{
@@ -114,6 +115,7 @@ message RevComRequest {
     oneof pyfunc {
         int64 scalarpyfunc = 1;
         int64 vectorpyfunc = 2;
+        int64 quantpyfunc = 3;
     }
 }
 
@@ -127,6 +129,7 @@ message RevComResult {
     oneof result {
         double scalar = 1;
         Vector vec = 2;
+        NULL quant = 3;
     }
 }
 
@@ -190,7 +193,7 @@ message VectorFunction{
     oneof vf {
         string gocode = 1;
         ScalarFunction3 components = 2;
-        int64 pyfunc =3;
+        int64 pyfunc = 3;
     }
 }
 
@@ -220,7 +223,32 @@ message GPUSlice{
     bytes handle = 5;
 }
 
+message GPUSliceMM{
+    int64 ncomp = 1;
+    int64 nx = 2;
+    int64 ny = 3;
+    int64 nz = 4;
+    repeated bytes handles = 5;
+}
 
+message PyQuant{
+    int64 ncomp = 1;
+    int64 funcno = 2;
+    GPUSlice underlying = 3;
+}
+
+message Quantity{
+    oneof q {
+        MumaxObject mmobj = 1;
+        string gocode = 2; 
+        PyQuant py =3;
+    }
+}
+
+message RevComQuantRequest{
+    int64 funcno = 1;
+    GPUSliceMM sl = 2;
+}
 
 service mumax {
     rpc Eval(STRING) returns (NULL) {}
@@ -230,6 +258,7 @@ service mumax {
     rpc CallMethod(MethodCall) returns (CallResponse) {}
 
     rpc ReverseCommunication(stream RevComResult) returns (stream RevComRequest) {}
+    rpc ReverseCommunicationQuantities(stream NULL) returns (stream RevComQuantRequest) {}
 
     rpc GetBool(MumaxObject) returns (BOOL) {}
     rpc GetInt(MumaxObject) returns (INT) {}

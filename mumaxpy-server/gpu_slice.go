@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"unsafe"
 
+	"github.com/mumax/3/cuda"
 	"github.com/mumax/3/data"
 	pb "github.com/will-henderson/mumaxpy/protocol"
 )
@@ -21,27 +22,19 @@ import "C"
 
 func (e *mumax) NewGPUSlice(ctx context.Context, in *pb.GPUSlice) (*pb.MumaxObject, error) {
 
-	compsize := in.Nx * in.Ny * in.Nz * 4
+	sl, err := newGPUSlice(in)
+	return AddDynamicObject(reflect.ValueOf(sl)), err
+}
 
-	//write well firstly this probably needs to come from the right context
+func newGPUSlice(in *pb.GPUSlice) (*data.Slice, error) {
+
+	compsize := in.Nx * in.Ny * in.Nz * 4
 
 	if len(in.Handle) != C.CUDA_IPC_HANDLE_SIZE {
 		return nil, errors.New("gpu memory handle is not the right length, got" + strconv.Itoa(len(in.Handle)))
 	}
 
-	//well, we need to call this from the right thread anyway
-
 	var err C.int
-
-	//try on stack?
-	var b_handle [64]byte
-	for i := 0; i < 64; i++ {
-		b_handle[i] = in.Handle[i]
-	}
-
-	//ptr := Execute(func() interface{} { return C.open_mem_handle(unsafe.Pointer(&b_handle[0]), &err) })
-	bytestr := C.CString(string(in.Handle))
-	defer C.free(unsafe.Pointer(bytestr))
 	ptr := C.open_mem_handle((*C.char)(unsafe.Pointer(&in.Handle[0])), &err)
 
 	if err != 0 {
@@ -58,25 +51,38 @@ func (e *mumax) NewGPUSlice(ctx context.Context, in *pb.GPUSlice) (*pb.MumaxObje
 	}
 
 	sl := data.SliceFromPtrs([3]int{int(in.Nx), int(in.Ny), int(in.Nz)}, data.GPUMemory, ptrs)
-
-	return AddDynamicObject(reflect.ValueOf(sl)), nil
+	return sl, nil
 }
 
-//probably want to check we free it correctly.
+func getHandles(sl *data.Slice) *pb.GPUSliceMM {
 
-func getHandles(sl *data.Slice) [][]byte {
-	//probably want to check that he lives on the GPU
-	handle_bytes := make([][]byte, sl.NComp())
-	if sl.GPUAccess() {
-		for comp := 0; comp < sl.NComp(); comp++ {
-			ptr := sl.DevPtr(comp)
-			var handle C.cudaIpcMemHandle_t
-			C.cudaIpcGetMemHandle(&handle, ptr)
-			handle_bytes[comp] = C.GoBytes(unsafe.Pointer(&handle), C.CUDA_IPC_HANDLE_SIZE)
-			// we would then like to process this into a byte string that we can send to python
+	ncomp := sl.NComp()
+	size := sl.Size()
 
+	if !sl.GPUAccess() {
+		panic("slice needs GPU access to eval")
+	}
+
+	sl = cuda.Buffer(ncomp, size)
+	handles := make([][]byte, ncomp)
+
+	var err C.int
+
+	for c := 0; c < ncomp; c++ {
+		handles[c] = make([]byte, C.CUDA_IPC_HANDLE_SIZE)
+		C.get_mem_handle((*C.char)(unsafe.Pointer(&handles[c][0])), sl.DevPtr(c), &err)
+
+		if err != 0 {
+			panic("couldn't share memory")
 		}
 	}
 
-	return handle_bytes
+	msg := &pb.GPUSliceMM{Ncomp: int64(ncomp),
+		Nx:      int64(size[0]),
+		Ny:      int64(size[1]),
+		Nz:      int64(size[2]),
+		Handles: handles}
+
+	return msg
+
 }

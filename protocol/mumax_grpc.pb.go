@@ -28,6 +28,7 @@ type MumaxClient interface {
 	Call(ctx context.Context, in *FunctionCall, opts ...grpc.CallOption) (*CallResponse, error)
 	CallMethod(ctx context.Context, in *MethodCall, opts ...grpc.CallOption) (*CallResponse, error)
 	ReverseCommunication(ctx context.Context, opts ...grpc.CallOption) (Mumax_ReverseCommunicationClient, error)
+	ReverseCommunicationQuantities(ctx context.Context, opts ...grpc.CallOption) (Mumax_ReverseCommunicationQuantitiesClient, error)
 	GetBool(ctx context.Context, in *MumaxObject, opts ...grpc.CallOption) (*BOOL, error)
 	GetInt(ctx context.Context, in *MumaxObject, opts ...grpc.CallOption) (*INT, error)
 	GetString(ctx context.Context, in *MumaxObject, opts ...grpc.CallOption) (*STRING, error)
@@ -174,6 +175,37 @@ func (x *mumaxReverseCommunicationClient) Send(m *RevComResult) error {
 
 func (x *mumaxReverseCommunicationClient) Recv() (*RevComRequest, error) {
 	m := new(RevComRequest)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func (c *mumaxClient) ReverseCommunicationQuantities(ctx context.Context, opts ...grpc.CallOption) (Mumax_ReverseCommunicationQuantitiesClient, error) {
+	stream, err := c.cc.NewStream(ctx, &Mumax_ServiceDesc.Streams[3], "/mumaxpy.mumax/ReverseCommunicationQuantities", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &mumaxReverseCommunicationQuantitiesClient{stream}
+	return x, nil
+}
+
+type Mumax_ReverseCommunicationQuantitiesClient interface {
+	Send(*NULL) error
+	Recv() (*RevComQuantRequest, error)
+	grpc.ClientStream
+}
+
+type mumaxReverseCommunicationQuantitiesClient struct {
+	grpc.ClientStream
+}
+
+func (x *mumaxReverseCommunicationQuantitiesClient) Send(m *NULL) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *mumaxReverseCommunicationQuantitiesClient) Recv() (*RevComQuantRequest, error) {
+	m := new(RevComQuantRequest)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
@@ -370,6 +402,7 @@ type MumaxServer interface {
 	Call(context.Context, *FunctionCall) (*CallResponse, error)
 	CallMethod(context.Context, *MethodCall) (*CallResponse, error)
 	ReverseCommunication(Mumax_ReverseCommunicationServer) error
+	ReverseCommunicationQuantities(Mumax_ReverseCommunicationQuantitiesServer) error
 	GetBool(context.Context, *MumaxObject) (*BOOL, error)
 	GetInt(context.Context, *MumaxObject) (*INT, error)
 	GetString(context.Context, *MumaxObject) (*STRING, error)
@@ -414,6 +447,9 @@ func (UnimplementedMumaxServer) CallMethod(context.Context, *MethodCall) (*CallR
 }
 func (UnimplementedMumaxServer) ReverseCommunication(Mumax_ReverseCommunicationServer) error {
 	return status.Errorf(codes.Unimplemented, "method ReverseCommunication not implemented")
+}
+func (UnimplementedMumaxServer) ReverseCommunicationQuantities(Mumax_ReverseCommunicationQuantitiesServer) error {
+	return status.Errorf(codes.Unimplemented, "method ReverseCommunicationQuantities not implemented")
 }
 func (UnimplementedMumaxServer) GetBool(context.Context, *MumaxObject) (*BOOL, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetBool not implemented")
@@ -604,6 +640,32 @@ func (x *mumaxReverseCommunicationServer) Send(m *RevComRequest) error {
 
 func (x *mumaxReverseCommunicationServer) Recv() (*RevComResult, error) {
 	m := new(RevComResult)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func _Mumax_ReverseCommunicationQuantities_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(MumaxServer).ReverseCommunicationQuantities(&mumaxReverseCommunicationQuantitiesServer{stream})
+}
+
+type Mumax_ReverseCommunicationQuantitiesServer interface {
+	Send(*RevComQuantRequest) error
+	Recv() (*NULL, error)
+	grpc.ServerStream
+}
+
+type mumaxReverseCommunicationQuantitiesServer struct {
+	grpc.ServerStream
+}
+
+func (x *mumaxReverseCommunicationQuantitiesServer) Send(m *RevComQuantRequest) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *mumaxReverseCommunicationQuantitiesServer) Recv() (*NULL, error) {
+	m := new(NULL)
 	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
@@ -1084,6 +1146,12 @@ var Mumax_ServiceDesc = grpc.ServiceDesc{
 		{
 			StreamName:    "ReverseCommunication",
 			Handler:       _Mumax_ReverseCommunication_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
+		},
+		{
+			StreamName:    "ReverseCommunicationQuantities",
+			Handler:       _Mumax_ReverseCommunicationQuantities_Handler,
 			ServerStreams: true,
 			ClientStreams: true,
 		},

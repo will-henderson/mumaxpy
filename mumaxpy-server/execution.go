@@ -68,4 +68,6 @@ func extraDeclarations() {
 	en.DeclFunc("SliceCopy", data.Copy, "copies data from one slice into another")
 	en.DeclFunc("Recycle", cuda.Recycle, "returns a buffer obtained from GetBuffer to the pool")
 	en.DeclFunc("ValueOf", en.ValueOf, "returns the GPU slice representation of a quantity")
+	en.DeclFunc("SetLLTorque", en.SetLLTorque, "sets dst to the current Landau-Lifshitz Torque")
+	//and probably want to expose all the other things one would need to implement evolver python side.
 }

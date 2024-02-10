@@ -266,6 +266,20 @@ def _makeVectorFunction(value, master):
     else:
         return mumax_pb2.VectorFunction(components=_makeScalarFunction3(value, master))
     
+
+def _makeQuantityFunction(value, master):
+    if isinstance(value, str):
+        return mumax_pb2.Quantity(gocode=value)
+    else:
+        try:
+            l = list(value)
+            if callable(l[0]):
+                #yeh, ok we get buffer from mumax
+
+        sl := master.NewSlice()
+        master.pyquants.append(lambda: )
+
+    
 def _pyfunc_setup(pyfunc_list, value, master):
     try:
         signat = signature(value)

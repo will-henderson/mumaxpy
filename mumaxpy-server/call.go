@@ -71,6 +71,9 @@ func GetArgv(fType reflect.Type, in *pb.FunctionCall) (argv []reflect.Value) {
 			vf, _ := processVectorFunction(in.ArgVectorFunction[0])
 			argv[i] = reflect.ValueOf(vf)
 			in.ArgVectorFunction = in.ArgVectorFunction[1:]
+		case "engine.Quantity":
+			argv[i], _ = processQuantity(in.ArgQuantity[0])
+			in.ArgQuantity = in.ArgQuantity[1:]
 		case "data.Vector":
 			argv[i] = reflect.ValueOf(data.Vector{in.ArgDouble[0], in.ArgDouble[1], in.ArgDouble[2]})
 			in.ArgDouble = in.ArgDouble[3:]

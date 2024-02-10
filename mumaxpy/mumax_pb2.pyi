@@ -110,7 +110,7 @@ class MumaxObjects(_message.Message):
     def __init__(self, s: _Optional[_Iterable[_Union[MumaxObject, _Mapping]]] = ...) -> None: ...
 
 class FunctionCall(_message.Message):
-    __slots__ = ("name", "argString", "argBool", "argDouble", "argInt", "argMumax", "argScalarFunction", "argVectorFunction")
+    __slots__ = ("name", "argString", "argBool", "argDouble", "argInt", "argMumax", "argScalarFunction", "argVectorFunction", "argQuantity")
     NAME_FIELD_NUMBER: _ClassVar[int]
     ARGSTRING_FIELD_NUMBER: _ClassVar[int]
     ARGBOOL_FIELD_NUMBER: _ClassVar[int]
@@ -119,6 +119,7 @@ class FunctionCall(_message.Message):
     ARGMUMAX_FIELD_NUMBER: _ClassVar[int]
     ARGSCALARFUNCTION_FIELD_NUMBER: _ClassVar[int]
     ARGVECTORFUNCTION_FIELD_NUMBER: _ClassVar[int]
+    ARGQUANTITY_FIELD_NUMBER: _ClassVar[int]
     name: str
     argString: _containers.RepeatedScalarFieldContainer[str]
     argBool: _containers.RepeatedScalarFieldContainer[bool]
@@ -127,7 +128,8 @@ class FunctionCall(_message.Message):
     argMumax: _containers.RepeatedCompositeFieldContainer[MumaxObject]
     argScalarFunction: _containers.RepeatedCompositeFieldContainer[ScalarFunction]
     argVectorFunction: _containers.RepeatedCompositeFieldContainer[VectorFunction]
-    def __init__(self, name: _Optional[str] = ..., argString: _Optional[_Iterable[str]] = ..., argBool: _Optional[_Iterable[bool]] = ..., argDouble: _Optional[_Iterable[float]] = ..., argInt: _Optional[_Iterable[int]] = ..., argMumax: _Optional[_Iterable[_Union[MumaxObject, _Mapping]]] = ..., argScalarFunction: _Optional[_Iterable[_Union[ScalarFunction, _Mapping]]] = ..., argVectorFunction: _Optional[_Iterable[_Union[VectorFunction, _Mapping]]] = ...) -> None: ...
+    argQuantity: _containers.RepeatedCompositeFieldContainer[Quantity]
+    def __init__(self, name: _Optional[str] = ..., argString: _Optional[_Iterable[str]] = ..., argBool: _Optional[_Iterable[bool]] = ..., argDouble: _Optional[_Iterable[float]] = ..., argInt: _Optional[_Iterable[int]] = ..., argMumax: _Optional[_Iterable[_Union[MumaxObject, _Mapping]]] = ..., argScalarFunction: _Optional[_Iterable[_Union[ScalarFunction, _Mapping]]] = ..., argVectorFunction: _Optional[_Iterable[_Union[VectorFunction, _Mapping]]] = ..., argQuantity: _Optional[_Iterable[_Union[Quantity, _Mapping]]] = ...) -> None: ...
 
 class Array(_message.Message):
     __slots__ = ("i", "b", "s", "d", "o", "a")
@@ -168,12 +170,14 @@ class CallResponse(_message.Message):
     def __init__(self, outString: _Optional[_Iterable[str]] = ..., outBool: _Optional[_Iterable[bool]] = ..., outDouble: _Optional[_Iterable[float]] = ..., outInt: _Optional[_Iterable[int]] = ..., outMumax: _Optional[_Iterable[_Union[MumaxObject, _Mapping]]] = ..., outArray: _Optional[_Iterable[_Union[Array, _Mapping]]] = ...) -> None: ...
 
 class RevComRequest(_message.Message):
-    __slots__ = ("scalarpyfunc", "vectorpyfunc")
+    __slots__ = ("scalarpyfunc", "vectorpyfunc", "quantpyfunc")
     SCALARPYFUNC_FIELD_NUMBER: _ClassVar[int]
     VECTORPYFUNC_FIELD_NUMBER: _ClassVar[int]
+    QUANTPYFUNC_FIELD_NUMBER: _ClassVar[int]
     scalarpyfunc: int
     vectorpyfunc: int
-    def __init__(self, scalarpyfunc: _Optional[int] = ..., vectorpyfunc: _Optional[int] = ...) -> None: ...
+    quantpyfunc: int
+    def __init__(self, scalarpyfunc: _Optional[int] = ..., vectorpyfunc: _Optional[int] = ..., quantpyfunc: _Optional[int] = ...) -> None: ...
 
 class Vector(_message.Message):
     __slots__ = ("x", "y", "z")
@@ -186,12 +190,14 @@ class Vector(_message.Message):
     def __init__(self, x: _Optional[float] = ..., y: _Optional[float] = ..., z: _Optional[float] = ...) -> None: ...
 
 class RevComResult(_message.Message):
-    __slots__ = ("scalar", "vec")
+    __slots__ = ("scalar", "vec", "quant")
     SCALAR_FIELD_NUMBER: _ClassVar[int]
     VEC_FIELD_NUMBER: _ClassVar[int]
+    QUANT_FIELD_NUMBER: _ClassVar[int]
     scalar: float
     vec: Vector
-    def __init__(self, scalar: _Optional[float] = ..., vec: _Optional[_Union[Vector, _Mapping]] = ...) -> None: ...
+    quant: NULL
+    def __init__(self, scalar: _Optional[float] = ..., vec: _Optional[_Union[Vector, _Mapping]] = ..., quant: _Optional[_Union[NULL, _Mapping]] = ...) -> None: ...
 
 class MethodCall(_message.Message):
     __slots__ = ("mmobj", "fc")
@@ -334,3 +340,45 @@ class GPUSlice(_message.Message):
     nz: int
     handle: bytes
     def __init__(self, ncomp: _Optional[int] = ..., nx: _Optional[int] = ..., ny: _Optional[int] = ..., nz: _Optional[int] = ..., handle: _Optional[bytes] = ...) -> None: ...
+
+class GPUSliceMM(_message.Message):
+    __slots__ = ("ncomp", "nx", "ny", "nz", "handles")
+    NCOMP_FIELD_NUMBER: _ClassVar[int]
+    NX_FIELD_NUMBER: _ClassVar[int]
+    NY_FIELD_NUMBER: _ClassVar[int]
+    NZ_FIELD_NUMBER: _ClassVar[int]
+    HANDLES_FIELD_NUMBER: _ClassVar[int]
+    ncomp: int
+    nx: int
+    ny: int
+    nz: int
+    handles: _containers.RepeatedScalarFieldContainer[bytes]
+    def __init__(self, ncomp: _Optional[int] = ..., nx: _Optional[int] = ..., ny: _Optional[int] = ..., nz: _Optional[int] = ..., handles: _Optional[_Iterable[bytes]] = ...) -> None: ...
+
+class PyQuant(_message.Message):
+    __slots__ = ("ncomp", "funcno", "underlying")
+    NCOMP_FIELD_NUMBER: _ClassVar[int]
+    FUNCNO_FIELD_NUMBER: _ClassVar[int]
+    UNDERLYING_FIELD_NUMBER: _ClassVar[int]
+    ncomp: int
+    funcno: int
+    underlying: GPUSlice
+    def __init__(self, ncomp: _Optional[int] = ..., funcno: _Optional[int] = ..., underlying: _Optional[_Union[GPUSlice, _Mapping]] = ...) -> None: ...
+
+class Quantity(_message.Message):
+    __slots__ = ("mmobj", "gocode", "py")
+    MMOBJ_FIELD_NUMBER: _ClassVar[int]
+    GOCODE_FIELD_NUMBER: _ClassVar[int]
+    PY_FIELD_NUMBER: _ClassVar[int]
+    mmobj: MumaxObject
+    gocode: str
+    py: PyQuant
+    def __init__(self, mmobj: _Optional[_Union[MumaxObject, _Mapping]] = ..., gocode: _Optional[str] = ..., py: _Optional[_Union[PyQuant, _Mapping]] = ...) -> None: ...
+
+class RevComQuantRequest(_message.Message):
+    __slots__ = ("funcno", "sl")
+    FUNCNO_FIELD_NUMBER: _ClassVar[int]
+    SL_FIELD_NUMBER: _ClassVar[int]
+    funcno: int
+    sl: GPUSliceMM
+    def __init__(self, funcno: _Optional[int] = ..., sl: _Optional[_Union[GPUSliceMM, _Mapping]] = ...) -> None: ...

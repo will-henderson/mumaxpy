@@ -12,6 +12,7 @@ def functionCall(name, argnames, argtypes, isMM):
     argMumax = []
     argScalarFunction = []
     argVectorFunction = []
+    argQuantity = []
 
     for argname, argtype in zip(argnames, argtypes):
         match argtype:
@@ -23,13 +24,14 @@ def functionCall(name, argnames, argtypes, isMM):
                 argBool.append(argname)
             case "float32" | "float64":
                 argDouble.append(argname)
-            case "data.Vector":
+            case "data.Vector": #should be allowed to pass a vector here!!!
                 argDouble.append(", ".join([argname + "[" + str(i) + "]" for i in range(3)] ))  
             case "script.ScalarFunction":
                 argScalarFunction.append("_makeScalarFunction(" + argname + ", " + master + ")")
             case "script.VectorFunction":
                 argVectorFunction.append("_makeVectorFunction(" + argname + ", " + master + ")")
-
+            case "engine.Quantity":
+                argQuantity.append("_makeQuantity(" + argname + ", " + master + ")")
             case _: #need to preprocess these!!
                 argMumax.append("_pam(" + argname + ")") 
 
@@ -42,6 +44,7 @@ def functionCall(name, argnames, argtypes, isMM):
     s +=      "argMumax=" + "[" + ", ".join(a for a in argMumax) + "], \n"
     s +=      "argScalarFunction=" + "[" + ", ".join(a for a in argScalarFunction) + "], \n"
     s +=      "argVectorFunction=" + "[" + ", ".join(a for a in argVectorFunction) + "])\n"
+    s +=      "argQuantity=" + "[" + ", ".join(a for a in argQuantity) + "])\n"
 
     return s
 

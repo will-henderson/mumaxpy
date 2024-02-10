@@ -44,6 +44,11 @@ class mumaxStub(object):
                 request_serializer=mumax__pb2.RevComResult.SerializeToString,
                 response_deserializer=mumax__pb2.RevComRequest.FromString,
                 )
+        self.ReverseCommunicationQuantities = channel.stream_stream(
+                '/mumaxpy.mumax/ReverseCommunicationQuantities',
+                request_serializer=mumax__pb2.NULL.SerializeToString,
+                response_deserializer=mumax__pb2.RevComQuantRequest.FromString,
+                )
         self.GetBool = channel.unary_unary(
                 '/mumaxpy.mumax/GetBool',
                 request_serializer=mumax__pb2.MumaxObject.SerializeToString,
@@ -180,6 +185,12 @@ class mumaxServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def ReverseCommunication(self, request_iterator, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ReverseCommunicationQuantities(self, request_iterator, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -337,6 +348,11 @@ def add_mumaxServicer_to_server(servicer, server):
                     servicer.ReverseCommunication,
                     request_deserializer=mumax__pb2.RevComResult.FromString,
                     response_serializer=mumax__pb2.RevComRequest.SerializeToString,
+            ),
+            'ReverseCommunicationQuantities': grpc.stream_stream_rpc_method_handler(
+                    servicer.ReverseCommunicationQuantities,
+                    request_deserializer=mumax__pb2.NULL.FromString,
+                    response_serializer=mumax__pb2.RevComQuantRequest.SerializeToString,
             ),
             'GetBool': grpc.unary_unary_rpc_method_handler(
                     servicer.GetBool,
@@ -547,6 +563,23 @@ class mumax(object):
         return grpc.experimental.stream_stream(request_iterator, target, '/mumaxpy.mumax/ReverseCommunication',
             mumax__pb2.RevComResult.SerializeToString,
             mumax__pb2.RevComRequest.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def ReverseCommunicationQuantities(request_iterator,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.stream_stream(request_iterator, target, '/mumaxpy.mumax/ReverseCommunicationQuantities',
+            mumax__pb2.NULL.SerializeToString,
+            mumax__pb2.RevComQuantRequest.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 

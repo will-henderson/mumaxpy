@@ -18,6 +18,15 @@ class GPUSlice(cuda.cudadrv.devicearray.DeviceNDArray):
         self.master = master
         self.identifier = master.roc(master.stub.NewGPUSlice(mumax_pb2.GPUSlice(ncomp=ncomp, nx=nx, ny=ny, nz=nz, handle=self.handle)))
 
+    def attach(self, master):
+        self.master = master
+        self.identifier = master.roc(master.stub.NewGPUSlice(
+            mumax_pb2.GPUSlice(
+                ncomp=self.shape[0],
+                nx=self.shape[1],
+                ny=self.shape[2], 
+                nz=self.shape[3], handle=self.handle)))
+
 
 class Slice(np.ndarray):
 

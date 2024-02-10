@@ -6,6 +6,19 @@ import (
 	pb "github.com/will-henderson/mumaxpy/protocol"
 )
 
+/*
+Reverse communication. When a python function is passed as a scalar/vector function
+argument to mumax, it is set up such that when this scalar function is evaluated
+by the calculator, an int, representing which particular scalar function has been passed,
+is sent on the ScalarFunctionRequest channel. This forwards this int on to the python
+side, which calculates the value of the scalar field (optionally calling other
+mumax functions as part of this), and returns the result over the grpc stream.
+
+This is then sent on the return channel to give the result of the Eval call
+to the calculator.
+
+*/
+
 var ScalarFunctionRequest = make(chan int)
 var VectorFunctionRequest = make(chan int)
 
@@ -17,9 +30,10 @@ var VectorFunctionResults [](chan [3]float64)
 func RevComReceiver(stream pb.Mumax_ReverseCommunicationServer) error {
 	for {
 		result, err := stream.Recv()
-		if err == io.EOF {
+		if err == io.EOF { //this kills all the go routines sending responses
 			ScalarFunctionRequest <- -1
 			VectorFunctionRequest <- -1
+
 			return nil
 		}
 		func_no := <-RevComRequests
@@ -63,5 +77,42 @@ func (e *mumax) ReverseCommunication(stream pb.Mumax_ReverseCommunicationServer)
 	go ScalarRevComRequester(stream)
 	go VectorRevComRequester(stream)
 	err := RevComReceiver(stream)
+	return err
+}
+
+// and we also have a separate stream for pyquants.
+// since these are a little more complicated.
+
+var PyQuantRequest = make(chan *pb.RevComQuantRequest)
+var PyQuantDone [](chan bool)
+
+func PyQuantRequester(stream pb.Mumax_ReverseCommunicationQuantitiesServer) error {
+	for {
+		request := <-PyQuantRequest
+		if request == nil {
+			return nil
+		}
+
+		stream.Send(request)
+		RevComRequests <- int(request.Funcno)
+	}
+}
+
+func RevComQuantReceiver(stream pb.Mumax_ReverseCommunicationQuantitiesServer) error {
+	for {
+		_, err := stream.Recv()
+		if err == io.EOF { //this kills all the go routines sending responses
+			PyQuantRequest <- nil
+			return nil
+		}
+		func_no := <-RevComRequests
+		PyQuantDone[func_no] <- true
+	}
+}
+
+func (e *mumax) ReverseCommunicationQuantities(stream pb.Mumax_ReverseCommunicationQuantitiesServer) error {
+
+	go PyQuantRequester(stream)
+	err := RevComQuantReceiver(stream)
 	return err
 }
