@@ -1,3 +1,4 @@
 *.out
 *.pyc
 *.egg-info/
+/build
