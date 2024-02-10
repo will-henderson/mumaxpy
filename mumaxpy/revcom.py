@@ -75,22 +75,3 @@ async def Operation(operation, initialsend, master):
         task.cancel()
 
     return result 
-
-class RevComHandler():
-    def __init__(self, scalarpyfuncs, vectorpyfuncs, stub):
-        self.scalarpyfuncs = scalarpyfuncs
-        self.vectorpyfuncs = vectorpyfuncs
-        self.stub = stub
-
-    async def start(self):
-        self.requests = self.stub.ReverseCommunication(self.handler())
-    
-    async def handler(self):
-        async for request in self.requests:
-            match request.WhichOneof("pyfunc"):
-                case "scalarpyfunc":
-                    val = self.scalarpyfuncs[request.scalarpyfunc]()
-                    yield mumax_pb2.RevComResult(scalar=val)
-                case "vectorpyfunc":
-                    val = self.vectorpyfuncs[request.vectorpyfunc]()
-                    yield mumax_pb2.RevComResult(vector=mumax_pb2.Vector(x=val[0], y=val[1], z=val[2]))

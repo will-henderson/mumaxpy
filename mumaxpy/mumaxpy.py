@@ -274,11 +274,11 @@ def _makeVectorFunction(value, master):
         return mumax_pb2.VectorFunction(components=_makeScalarFunction3(value, master))
     
 
-def _makeQuantityFunction(value, master):
+def _makeQuantity(value, master):
     if isinstance(value, str):
         return mumax_pb2.Quantity(gocode=value)
     elif hasattr(value, "identifier"):
-        return mumax_pb2.Quantity(mmobj=value)
+        return mumax_pb2.Quantity(mmobj=_pam(value))
     elif quantity.isquantity(value):
         master.pyquants.append(value.__call__)
         

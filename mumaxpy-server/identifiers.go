@@ -66,7 +66,6 @@ func (e *mumax) GetIdentifiers(in *pb.NULL, stream pb.Mumax_GetIdentifiersServer
 func (e *mumax) GetTypeInfo(in *pb.STRING, stream pb.Mumax_GetTypeInfoServer) error {
 
 	t := typeMap[in.S]
-	print("element", t.Elem())
 	t = baseElem(t)
 
 	if t.Kind() != reflect.Interface {
@@ -85,17 +84,9 @@ func (e *mumax) GetTypeInfo(in *pb.STRING, stream pb.Mumax_GetTypeInfoServer) er
 				return err
 			}
 		}
-	} else {
-
-		//ok we need to deal with interfaces here
-		print(t.Kind())
-		print(t.Name())
-		print(t.Elem())
-		for i := 0; i < t.NumMethod(); i++ {
-			print(t.Method(i).Name)
-		}
-
 	}
+
+	// we just simply do not pass out interface methods.
 
 	if t.Kind() == reflect.Struct {
 		for i := 0; i < t.NumField(); i++ {

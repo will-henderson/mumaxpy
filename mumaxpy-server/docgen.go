@@ -111,11 +111,9 @@ func generatePackageDoc(packageName string) (pfs packageFunctions) {
 		}
 		methods[t.Name] = methodsT
 
-		//interfaces[t.Name] = isInterface(t)
-		//if interfaces[t.Name] {
-		//	fmt.Println(t.Name)
-		//	getInterfaceMethods(t)
-		//}
+		if isInterface(t) {
+			//getInterfaceMethods(t) //just ignore
+		}
 	}
 
 	//we then need to go through and add embedded interface types
@@ -151,9 +149,16 @@ func getInterfaceMethods(t *doc.Type) []string {
 	inter, _ := typeSpec.Type.(*ast.InterfaceType)
 
 	for _, method := range inter.Methods.List {
-		fmt.Println(method)
+
+		//can get parameter
+		fmt.Println("meth", method)
+		fmt.Println("names", method.Names)
 		function := method.Type.(*ast.FuncType)
-		fmt.Println(function)
+
+		for _, param := range function.Params.List {
+			fmt.Println("param name", param.Names)
+			fmt.Println("param type", reflect.TypeOf(param.Type))
+		}
 	}
 
 	return nil
