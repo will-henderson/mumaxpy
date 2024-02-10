@@ -17,6 +17,7 @@ from . import funcstrings
 from . import revcom
 from . import jupyterhack
 from . import slices
+from . import quantity
 
 socket_address = "mumaxpy.sock"
 
@@ -83,6 +84,7 @@ class Mumax:
 
         self.scalarpyfuncs = []
         self.vectorpyfuncs = []
+        self.pyquants = []
 
     async def _populate_functions(self, asynchronous):
 
@@ -270,14 +272,16 @@ def _makeVectorFunction(value, master):
 def _makeQuantityFunction(value, master):
     if isinstance(value, str):
         return mumax_pb2.Quantity(gocode=value)
-    else:
-        try:
-            l = list(value)
-            if callable(l[0]):
-                #yeh, ok we get buffer from mumax
-
-        sl := master.NewSlice()
-        master.pyquants.append(lambda: )
+    elif hasattr(value, "identifier"):
+        return mumax_pb2.Quantity(mmobj=value)
+    elif quantity.isquantity(value):
+        master.pyquants.append()
+        
+    elif callable(value):
+        raise TypeError("it appears you have tried to pass a python function, \
+                        however, to pass a quantity in this way it must be as an object which is callable, \
+                        and has the ncomp attribute. you can use the mumaxpy.Quantity class for this.")
+    
 
     
 def _pyfunc_setup(pyfunc_list, value, master):

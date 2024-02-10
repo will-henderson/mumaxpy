@@ -43,7 +43,7 @@ def functionCall(name, argnames, argtypes, isMM):
     s +=      "argInt=" + "[" + ", ".join(a for a in argInt) + "], "
     s +=      "argMumax=" + "[" + ", ".join(a for a in argMumax) + "], \n"
     s +=      "argScalarFunction=" + "[" + ", ".join(a for a in argScalarFunction) + "], \n"
-    s +=      "argVectorFunction=" + "[" + ", ".join(a for a in argVectorFunction) + "])\n"
+    s +=      "argVectorFunction=" + "[" + ", ".join(a for a in argVectorFunction) + "],\n"
     s +=      "argQuantity=" + "[" + ", ".join(a for a in argQuantity) + "])\n"
 
     return s
