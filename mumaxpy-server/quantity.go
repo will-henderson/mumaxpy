@@ -27,8 +27,8 @@ func processQuantity(s *pb.Quantity) (reflect.Value, error) {
 		return reflect.ValueOf(quantity), nil
 
 	case *pb.Quantity_Py:
-		PyQuantDone = append(PyQuantDone, make(chan bool))
-		quantity := py_quant{int(value.Py.Funcno), int(value.Py.Ncomp)}
+		PyQuantDone = append(PyQuantDone, make(chan struct{}))
+		quantity := &py_quant{int(value.Py.Funcno), int(value.Py.Ncomp)}
 		return reflect.ValueOf(quantity), nil
 	}
 	return reflect.ValueOf(nil), nil //never get here

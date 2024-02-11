@@ -71,7 +71,7 @@ class Slice(np.ndarray):
         return arr.view(np.ndarray)
 
 
-    def destructor(self):
+    def close(self):
         #it is a niche edge case where mumax will still want access to a slice that python doesn't want.
         #so just ignore it.
         self.shm.unlink()
@@ -83,8 +83,8 @@ class Slice(np.ndarray):
 
 
     def __del__(self):
-        if not isinstance(self.base, Slice) and self.maydestroy:
-            self.destructor()
+        if not isinstance(self.base, self.__class__) and self.maydestroy:
+            self.close()
 
     def attach(self, master):
         self.master = master

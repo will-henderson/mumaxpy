@@ -84,7 +84,8 @@ func (e *mumax) ReverseCommunication(stream pb.Mumax_ReverseCommunicationServer)
 // since these are a little more complicated.
 
 var PyQuantRequest = make(chan *pb.RevComQuantRequest)
-var PyQuantDone [](chan bool)
+var PyQuantDone [](chan struct{})
+var RevComQuantRequests =  make(chan int)
 
 func PyQuantRequester(stream pb.Mumax_ReverseCommunicationQuantitiesServer) error {
 	for {
@@ -94,7 +95,7 @@ func PyQuantRequester(stream pb.Mumax_ReverseCommunicationQuantitiesServer) erro
 		}
 
 		stream.Send(request)
-		RevComRequests <- int(request.Funcno)
+		RevComQuantRequests <- int(request.Funcno)
 	}
 }
 
@@ -105,8 +106,8 @@ func RevComQuantReceiver(stream pb.Mumax_ReverseCommunicationQuantitiesServer) e
 			PyQuantRequest <- nil
 			return nil
 		}
-		func_no := <-RevComRequests
-		PyQuantDone[func_no] <- true
+		func_no := <-RevComQuantRequests
+		PyQuantDone[func_no] <- struct{}{}
 	}
 }
 

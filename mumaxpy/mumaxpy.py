@@ -62,7 +62,7 @@ class Mumax:
                 self.loop = asyncio.new_event_loop()
                 asyncio.set_event_loop(self.loop)
             else:
-                raise 
+                raise e
 
         self.roc = self.loop.run_until_complete
 
@@ -192,10 +192,11 @@ class Mumax:
         
         self.server.send_signal(signal.SIGINT)
         self.roc(self.channel.close())
+        #os.remove(socket_address)
 
     def eval(self, cmd):
         if not isinstance(cmd, str):
-            pass #this is an error 
+            pass #this is an error
         
         self.roc(self.stub.Eval(mumax_pb2.STRING(s=cmd)))
 
@@ -275,12 +276,14 @@ def _makeVectorFunction(value, master):
     
 
 def _makeQuantity(value, master):
+    print("We are adding a pyquant")
     if isinstance(value, str):
         return mumax_pb2.Quantity(gocode=value)
     elif hasattr(value, "identifier"):
         return mumax_pb2.Quantity(mmobj=_pam(value))
     elif quantity.isquantity(value):
         master.pyquants.append(value.__call__)
+        return mumax_pb2.Quantity(py=mumax_pb2.PyQuant(ncomp=value.ncomp, funcno=len(master.pyquants)-1))
         
     elif callable(value):
         raise TypeError("it appears you have tried to pass a python function, \

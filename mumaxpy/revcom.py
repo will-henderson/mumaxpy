@@ -38,6 +38,7 @@ class RevComQuantHandler():
 
     async def handler(self):
         async for request in self.requests:
+            print("Handling a request!!!!!")
             sl = request.sl
             shape = (sl.nx, sl.ny, sl.nz)
             dtype = dtype(np.float32)
@@ -66,6 +67,7 @@ async def Operation(operation, initialsend, master):
         revcomhandler = RevComHandler(master.scalarpyfuncs, master.vectorpyfuncs, master.stub)
         revcom_tasks.append(asyncio.create_task(revcomhandler.start()))
     
+    print("Do we have pyquants? we have ", len(master.pyquants))
     if master.pyquants:
         revcomquanthandler = RevComQuantHandler(master.pyquants, master.stub)
         revcom_tasks.append(asyncio.create_task(revcomquanthandler.start()))

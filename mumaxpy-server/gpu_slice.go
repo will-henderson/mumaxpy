@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"unsafe"
 
-	"github.com/mumax/3/cuda"
 	"github.com/mumax/3/data"
 	pb "github.com/will-henderson/mumaxpy/protocol"
 )
@@ -63,7 +62,6 @@ func getHandles(sl *data.Slice) *pb.GPUSliceMM {
 		panic("slice needs GPU access to eval")
 	}
 
-	sl = cuda.Buffer(ncomp, size)
 	handles := make([][]byte, ncomp)
 
 	var err C.int

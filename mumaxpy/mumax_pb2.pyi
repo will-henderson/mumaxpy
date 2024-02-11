@@ -356,14 +356,12 @@ class GPUSliceMM(_message.Message):
     def __init__(self, ncomp: _Optional[int] = ..., nx: _Optional[int] = ..., ny: _Optional[int] = ..., nz: _Optional[int] = ..., handles: _Optional[_Iterable[bytes]] = ...) -> None: ...
 
 class PyQuant(_message.Message):
-    __slots__ = ("ncomp", "funcno", "underlying")
+    __slots__ = ("ncomp", "funcno")
     NCOMP_FIELD_NUMBER: _ClassVar[int]
     FUNCNO_FIELD_NUMBER: _ClassVar[int]
-    UNDERLYING_FIELD_NUMBER: _ClassVar[int]
     ncomp: int
     funcno: int
-    underlying: GPUSlice
-    def __init__(self, ncomp: _Optional[int] = ..., funcno: _Optional[int] = ..., underlying: _Optional[_Union[GPUSlice, _Mapping]] = ...) -> None: ...
+    def __init__(self, ncomp: _Optional[int] = ..., funcno: _Optional[int] = ...) -> None: ...
 
 class Quantity(_message.Message):
     __slots__ = ("mmobj", "gocode", "py")

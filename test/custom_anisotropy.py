@@ -10,10 +10,10 @@ def normalise(x):
 
 class CustomAnisField:
 
-    def __init__(self, mm, k, u):
+    def __init__(self, mm, K, u):
         self.ncomp = 3
         self.mm = mm
-        self.prefactor = 2 * k / mm.Msat.Average()
+        self.prefactor = 2 * K / mm.Msat.Average()
         self.u = cp.array(u, dtype=np.float32)
         self.u = cp.expand_dims(self.u, 1)
         self.u = cp.expand_dims(self.u, 1)
@@ -25,10 +25,10 @@ class CustomAnisField:
         res = cp.sum(self.u * m, axis=0)
         res = cp.expand_dims(res, 0)
         res = res * self.u 
-        return res, m
+        return res
 
     def __call__(self, Bx, By, Bz):
-        B, m = self.field()
+        B = self.field()
         for i, Bi in enumerate([Bx, By, Bz]):
             Bi = cp.array(Bi)
             cp.copyto(Bi, B[i, :, :, :])
@@ -64,6 +64,9 @@ with mumaxpy.Mumax() as mm:
 
     anis_field = CustomAnisField(mm, K, u)
     anis_energy = CustomAnisEnergy(mm, K, u)
+
+    mm.AddFieldTerm(anis_field)
+    mm.AddEdensTerm(anis_energy)
 
 
     test_cases = [
