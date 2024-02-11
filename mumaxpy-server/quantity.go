@@ -5,6 +5,7 @@ import (
 
 	"github.com/mumax/3/data"
 	en "github.com/mumax/3/engine"
+	"github.com/will-henderson/mumax/cuda"
 	pb "github.com/will-henderson/mumaxpy/protocol"
 )
 
@@ -49,6 +50,7 @@ func (c *py_quant) EvalTo(dst *data.Slice) {
 
 	go returnwatcher(c.funcno)
 	HandleOtherCalls()
+	print("cell0 received:", cuda.GetCell(dst, 0, 0, 0, 0), "\n")
 }
 
 func returnwatcher(funcno int) {
