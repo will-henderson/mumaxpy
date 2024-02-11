@@ -56,7 +56,6 @@ class RevComQuantHandler(RCHBase):
 
     async def handler(self):
         async for request in self.requests:
-            print("python got a request")
             sl = request.sl
             shape = (sl.nx, sl.ny, sl.nz)
             dtype = np.dtype(np.float32)
@@ -67,12 +66,8 @@ class RevComQuantHandler(RCHBase):
             with ExitStack() as stack:
                 dstarrs = [stack.enter_context(cuda.open_ipc_array(handle, shape, dtype, strides)) 
                         for handle in sl.handles]
-                print("about to call")
                 try:
                     self.pyquants[request.funcno](*dstarrs)
-                    
-                    avs = [cp.sum(cp.array(arr), axis=(0, 1, 2)) / (64*64*2) for arr in dstarrs]
-                    print(avs)
                 except Exception as e:
                     self.handle_exception(e)
                     break
