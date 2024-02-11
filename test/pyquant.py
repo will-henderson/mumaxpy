@@ -13,9 +13,10 @@ class SimpleField:
         msl = self.mm.SliceOf(m, gpu=True)
         field = 3 * cp.array(msl)
         
-        print("about to copy")
-        for i, B in [Bx, By, Bz]:
+        print("about to copy stuff")
+        for i, B in enumerate([Bx, By, Bz]):
             cp.copyto(cp.array(B), field[i])
+        print("done")
 
 
 with mumaxpy.Mumax() as mm:

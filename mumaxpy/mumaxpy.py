@@ -15,9 +15,13 @@ from numba import cuda
 
 from . import funcstrings
 from . import revcom
-from . import jupyterhack
+#from . import jupyterhack
 from . import slices
 from . import quantity
+
+import nest_asyncio
+nest_asyncio.apply()
+
 
 socket_address = "mumaxpy.sock"
 

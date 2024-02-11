@@ -27,7 +27,7 @@ with mumaxpy.Mumax() as mm:
 
     mm.m = mm.Uniform(1, 0, 0.1)
     E0 = mm.E_total.Get()
-    alpha = 0
+    mm.alpha = 0
     mm.Run(1e-9)
     E1 = mm.E_total.Get()
     Delta2 = E1-E0

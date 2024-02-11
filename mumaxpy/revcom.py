@@ -6,38 +6,57 @@ from numba import cuda
 from contextlib import ExitStack
 import numpy as np
 
+import cupy as cp ####
+
 ### General Reverse Communication Things ###
 
-class RevComHandler():
-    def __init__(self, scalarpyfuncs, vectorpyfuncs, stub):
+class RCHBase:
+    def __init__(self, stub, optask):
+        self.stub = stub
+        self.optask = optask
+        self.exception = []
+
+    def handle_exception(self, e):
+        self.optask.cancel()
+        self.exception.append(e)
+
+class RevComHandler(RCHBase):
+    def __init__(self, scalarpyfuncs, vectorpyfuncs, stub, optask):
         self.scalarpyfuncs = scalarpyfuncs
         self.vectorpyfuncs = vectorpyfuncs
-        self.stub = stub
+        super().__init__(stub, optask)
 
     async def start(self):
         self.requests = self.stub.ReverseCommunication(self.handler())
     
     async def handler(self):
         async for request in self.requests:
-            match request.WhichOneof("pyfunc"):
-                case "scalarpyfunc":
-                    val = self.scalarpyfuncs[request.scalarpyfunc]()
-                    yield mumax_pb2.RevComResult(scalar=val)
-                case "vectorpyfunc":
-                    val = self.vectorpyfuncs[request.vectorpyfunc]()
-                    yield mumax_pb2.RevComResult(vector=mumax_pb2.Vector(x=val[0], y=val[1], z=val[2]))
+            try:
+                match request.WhichOneof("pyfunc"):
+                    case "scalarpyfunc":
+                        val = self.scalarpyfuncs[request.scalarpyfunc]()
+                        yield mumax_pb2.RevComResult(scalar=val)
+                    case "vectorpyfunc":
+                        val = self.vectorpyfuncs[request.vectorpyfunc]()
+                        yield mumax_pb2.RevComResult(vector=mumax_pb2.Vector(x=val[0], y=val[1], z=val[2]))
+
+            except Exception as e:
+                self.handle_exception(e)
+                break
 
 
-class RevComQuantHandler():
-    def __init__(self, pyquants, stub):
+                
+class RevComQuantHandler(RCHBase):
+    def __init__(self, pyquants, stub, optask):
         self.pyquants = pyquants
-        self.stub = stub
+        super().__init__(stub, optask)
 
     async def start(self):
         self.requests = self.stub.ReverseCommunicationQuantities(self.handler())
 
     async def handler(self):
         async for request in self.requests:
+            print("python got a request")
             sl = request.sl
             shape = (sl.nx, sl.ny, sl.nz)
             dtype = np.dtype(np.float32)
@@ -48,9 +67,18 @@ class RevComQuantHandler():
             with ExitStack() as stack:
                 dstarrs = [stack.enter_context(cuda.open_ipc_array(handle, shape, dtype, strides)) 
                         for handle in sl.handles]
-                self.pyquants[request.funcno](*dstarrs)
+                print("about to call")
+                try:
+                    self.pyquants[request.funcno](*dstarrs)
+                    
+                    avs = [cp.sum(cp.array(arr), axis=(0, 1, 2)) / (64*64*2) for arr in dstarrs]
+                    print(avs)
+                except Exception as e:
+                    self.handle_exception(e)
+                    break
 
             yield mumax_pb2.NULL()
+
 
 
 async def Operation(operation, initialsend, master):
@@ -60,29 +88,27 @@ async def Operation(operation, initialsend, master):
 
     op_task = asyncio.create_task(op())
 
+    handlers = []
     revcom_tasks = []
 
     if master.scalarpyfuncs or master.vectorpyfuncs:
-        revcomhandler = RevComHandler(master.scalarpyfuncs, master.vectorpyfuncs, master.stub)
-        revcom_tasks.append(asyncio.create_task(revcomhandler.start()))
+        handlers.append(RevComHandler(master.scalarpyfuncs, master.vectorpyfuncs, master.stub, op_task))
     
     if master.pyquants:
-        revcomquanthandler = RevComQuantHandler(master.pyquants, master.stub)
-        revcom_tasks.append(asyncio.create_task(revcomquanthandler.start()))
+        handlers.append(RevComQuantHandler(master.pyquants, master.stub, op_task))
+
+    revcom_tasks = [asyncio.create_task(handler.start()) for handler in handlers]
     
-    result = await op_task
+    try:
+        result = await op_task
+    except asyncio.CancelledError:
+        for handler in handlers:
+            for e in handler.exception:
+                raise e #TODO: recover on the mumax side as well.
 
     for task in revcom_tasks:
         task.cancel()
-
-    for task in revcom_tasks:
-        try:
-            await task
-        except asyncio.CancelledError:
-            pass #this is expected
-        except Exception as e:
-            raise e #this is bad
-
+  
     return result 
 
 ##ok, on nested calls, e.g. when calling Mesh() or something, we don't want to start a reverse communication loop.
