@@ -38,19 +38,20 @@ class RevComQuantHandler():
 
     async def handler(self):
         async for request in self.requests:
-            print("Handling a request!!!!!")
+            print("WE HAVE a request!!!!")
             sl = request.sl
             shape = (sl.nx, sl.ny, sl.nz)
-            dtype = dtype(np.float32)
+            dtype = np.dtype(np.float32)
             strides = (dtype.itemsize, 
                    dtype.itemsize * sl.nx, 
                    dtype.itemsize * sl.nx * sl.ny)
-            
+
             with ExitStack() as stack:
                 dstarrs = [stack.enter_context(cuda.open_ipc_array(handle, shape, dtype, strides)) 
-                           for handle in sl.handles]
-                
+                        for handle in sl.handles]
                 self.pyquants[request.funcno](*dstarrs)
+
+            yield mumax_pb2.NULL()
 
 
 
@@ -67,13 +68,21 @@ async def Operation(operation, initialsend, master):
         revcomhandler = RevComHandler(master.scalarpyfuncs, master.vectorpyfuncs, master.stub)
         revcom_tasks.append(asyncio.create_task(revcomhandler.start()))
     
-    print("Do we have pyquants? we have ", len(master.pyquants))
     if master.pyquants:
         revcomquanthandler = RevComQuantHandler(master.pyquants, master.stub)
         revcom_tasks.append(asyncio.create_task(revcomquanthandler.start()))
     
     result = await op_task
+
     for task in revcom_tasks:
         task.cancel()
+
+    for task in revcom_tasks:
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass #this is expected
+        except Exception as e:
+            raise e #this is bad
 
     return result 

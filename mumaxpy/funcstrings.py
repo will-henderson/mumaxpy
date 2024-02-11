@@ -61,17 +61,27 @@ def docComment(doc, argnames, argtypes):
     s += "    '''\n"
     return s
 
-def returnLine(outtypes, isMM):
+def returnLine(outtypes, isMM, asynchronous):
 
     if isMM:
         master = 'self'
     else:
         master = 'self.master'
 
+    if asynchronous:
+        def asrun(opstr):
+            return "await " + opstr
+    else:
+        def asrun(opstr):
+            return master + ".roc(" + opstr + ")"
+        
+    #ok I think perhaps we just need an LHS to get this working
+
+    mmobj_results = ""
     out = []
     nOutString = 0
     nOutBool = 0
-    nOutDouble = 0
+    nOutDouble = 0 
     nOutInt = 0
     nOutMumax = 0
     nOutArray = 0
@@ -99,10 +109,13 @@ def returnLine(outtypes, isMM):
                     nOutDouble += 3 
 
                 case _:
-                    out.append("toObj(reply.outMumax[" + str(nOutMumax) + "], '" + outtype + "', " + master + ")")
-                    nOutMumax += 1    
+                    mmobj_results = "    a = " + asrun("toObj(reply.outMumax[" + str(nOutMumax) + "], '" + outtype + "', " + master + ")") + "\n"
+                    mmobj_results += "    objs.append(a)\n"
+                    out.append("objs[" + str(nOutMumax) +  "]")
+                    nOutMumax += 1
 
-    s = "    return " + ", ".join(out) + "\n"
+    s = "    objs = []\n"
+    s += mmobj_results + "    return " + ", ".join(out) + "\n"
 
     return s
 
@@ -121,7 +134,7 @@ def functionString(name, argnames, argtypes, outtypes, doc, asynchronous):
     s += docComment(doc, argnames, argtypes)
     s += functionCall(name.lower(), argnames, argtypes, True)
     s += "    reply = " + asrun("revcom.Operation(self.stub.Call, fc, self)") + "\n"
-    s += returnLine(outtypes, True)
+    s += returnLine(outtypes, True, asynchronous)
     #s += "self." + name + " = f.__get__(self)"  ##no I want to define on class rather than instance
     s += "self.__class__." + name + " = f"
     return s
@@ -143,7 +156,7 @@ def methodString(mthname, argnames, argtypes, outtypes, doc, asynchronous):
     s += functionCall(mthname, argnames, argtypes, False)
     s += "    mthcall = mumax_pb2.MethodCall(mmobj=self.identifier, fc=fc)\n" 
     s += "    reply = " + asrun("revcom.Operation(self.master.stub.CallMethod, mthcall, self.master)") +  "\n"
-    s += returnLine(outtypes, False)
+    s += returnLine(outtypes, False, asynchronous)
     s += "classdict['" + mthname +"'] = f"
 
     return s
@@ -214,7 +227,7 @@ def getString(name, vtype):
         case "float32" | "float64":
             getstring += "    res = self.roc(self.stub.GetDouble(req)).s\n"
         case _:
-            getstring += "    res = toObj(req, '" + vtype + "', self)\n"
+            getstring += "    res = self.roc(toObj(req, '" + vtype + "', self))\n"
 
     getstring += "    return res\n"
     return getstring

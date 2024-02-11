@@ -65,6 +65,7 @@ class Mumax:
                 raise e
 
         self.roc = self.loop.run_until_complete
+        #this is an issue if things are called from outside the main loop. 
 
         socketpath = "unix:" + socket_address
         self.channel = grpc.aio.insecure_channel(socketpath, options=[
@@ -200,18 +201,21 @@ class Mumax:
         
         self.roc(self.stub.Eval(mumax_pb2.STRING(s=cmd)))
 
-def toObj(identifier, vtype, master):
+async def toObj(identifier, vtype, master):
     if vtype not in master.typelist:
-        makeType(master, vtype)
+        await makeType(master, vtype)
     return master.typelist[vtype](identifier) 
 
-def makeType(master, vtype):
+async def makeType(master, vtype):
 
     def constructor(self, identifier):
         self.identifier = identifier
 
     def destructor(self):
-        self.master.roc(self.master.stub.DestroyMumax(self.identifier))
+        try:
+            self.master.roc(self.master.stub.DestroyMumax(self.identifier))
+        except grpc._cython.cygrpc.UsageError:
+            pass #this is fine, mumax is dead so don't need to destroy anything inside
 
 
     classdict = {"__init__": constructor,
@@ -219,9 +223,9 @@ def makeType(master, vtype):
                  "__exit__": destructor, 
                   "master": master}
 
-    master.roc(addMethods(master, vtype, classdict))
-
+    await addMethods(master, vtype, classdict)
     master.typelist[vtype] = type(vtype, (object, ), classdict)
+    return 
 
 async def addMethods(master, vtype, classdict):
     req = mumax_pb2.STRING(s=vtype)
@@ -236,6 +240,7 @@ async def addMethods(master, vtype, classdict):
             case "r":
                 s = funcstrings.fieldString(identifier.name, identifier.r.type, identifier.doc)
         exec(s)
+    return
 
 def _pam(mmobj):
     return mmobj.identifier
@@ -276,13 +281,12 @@ def _makeVectorFunction(value, master):
     
 
 def _makeQuantity(value, master):
-    print("We are adding a pyquant")
     if isinstance(value, str):
         return mumax_pb2.Quantity(gocode=value)
     elif hasattr(value, "identifier"):
         return mumax_pb2.Quantity(mmobj=_pam(value))
     elif quantity.isquantity(value):
-        master.pyquants.append(value.__call__)
+        master.pyquants.append(value)
         return mumax_pb2.Quantity(py=mumax_pb2.PyQuant(ncomp=value.ncomp, funcno=len(master.pyquants)-1))
         
     elif callable(value):
