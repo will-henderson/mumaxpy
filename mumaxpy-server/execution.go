@@ -16,14 +16,21 @@ import (
 //one goroutine per method call, we need to route anything that might call
 //cuda into a specific goroutine.
 
-var Inject = make(chan func() interface{})
+var current_n int
+
+type InjectType struct {
+	f func() interface{}
+	n int
+}
+
+var Inject = make(chan InjectType)
 
 type InjectResponseType struct {
 	result interface{}
 	err    interface{}
 }
 
-var InjectResponse = make(chan InjectResponseType)
+var InjectResponse [](chan InjectResponseType)
 
 func Run() {
 	flag.Parse()
@@ -40,7 +47,7 @@ func Run() {
 
 	defer func() {
 		if r := recover(); r != nil {
-			InjectResponse <- InjectResponseType{nil, r}
+			InjectResponse[current_n] <- InjectResponseType{nil, r}
 		}
 		loop()
 	}()
@@ -50,18 +57,48 @@ func Run() {
 
 func loop() {
 	for {
-		f := <-Inject
-		InjectResponse <- InjectResponseType{f(), nil}
+		inj := <-Inject
+		InjectResponse[inj.n] <- InjectResponseType{inj.f(), nil}
 	}
 }
 
 func Execute(f func() interface{}) interface{} {
-	Inject <- f
-	resp := <-InjectResponse
+	n := inject_channel()
+	defer decrement_inject_channel()
+
+	Inject <- InjectType{f, n}
+	resp := <-InjectResponse[n]
 	if resp.err != nil {
 		panic(resp.err)
 	}
 	return resp.result
+}
+
+func inject_channel() int {
+
+	n := current_n
+	if len(InjectResponse) <= n {
+		InjectResponse = append(InjectResponse, make(chan InjectResponseType))
+	}
+
+	current_n = current_n + 1
+
+	return n
+}
+
+func decrement_inject_channel() {
+	current_n = current_n - 1
+}
+
+func HandleOtherCalls() {
+	for {
+		inj := <-Inject
+		if inj.n == -1 { //to break off this routine on a response
+			return
+		} else {
+			InjectResponse[inj.n] <- InjectResponseType{inj.f(), nil}
+		}
+	}
 }
 
 func extraDeclarations() {

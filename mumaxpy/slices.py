@@ -84,7 +84,10 @@ class Slice(np.ndarray):
 
     def __del__(self):
         if not isinstance(self.base, self.__class__) and self.maydestroy:
-            self.close()
+            try:
+                self.close()
+            except FileNotFoundError:
+                pass #this find, probably have already closed.
 
     def attach(self, master):
         self.master = master

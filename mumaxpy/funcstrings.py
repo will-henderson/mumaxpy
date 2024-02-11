@@ -124,16 +124,16 @@ def functionString(name, argnames, argtypes, outtypes, doc, asynchronous):
     if asynchronous:
         s = "async "
         def asrun(opstr):
-            return "await " + opstr
+            return "await revcom.async_operate_manager(" + opstr + ")"
     else:
         s = ""
         def asrun(opstr):
-            return "self.roc(" + opstr + ")"
+            return "revcom.sync_operate_manager(" + opstr + ")"
 
     s += "def f(self, " +  ", ".join(argnames) + "):\n" 
     s += docComment(doc, argnames, argtypes)
     s += functionCall(name.lower(), argnames, argtypes, True)
-    s += "    reply = " + asrun("revcom.Operation(self.stub.Call, fc, self)") + "\n"
+    s += "    reply = " + asrun("self.stub.Call, fc, self") + "\n"
     s += returnLine(outtypes, True, asynchronous)
     #s += "self." + name + " = f.__get__(self)"  ##no I want to define on class rather than instance
     s += "self.__class__." + name + " = f"
@@ -145,17 +145,17 @@ def methodString(mthname, argnames, argtypes, outtypes, doc, asynchronous):
     if asynchronous:
         s = "async "
         def asrun(opstr):
-            return "await " + opstr
+            return "await revcom.async_operate_manager(" + opstr + ")"
     else:
         s = ""
         def asrun(opstr):
-            return "self.master.roc(" + opstr + ")"
+            return "revcom.sync_operate_manager(" + opstr + ")"
 
     s += "def f(self, " +  ", ".join(argnames) + "):\n" 
     s += docComment(doc, argnames, argtypes)
     s += functionCall(mthname, argnames, argtypes, False)
     s += "    mthcall = mumax_pb2.MethodCall(mmobj=self.identifier, fc=fc)\n" 
-    s += "    reply = " + asrun("revcom.Operation(self.master.stub.CallMethod, mthcall, self.master)") +  "\n"
+    s += "    reply = " + asrun("self.master.stub.CallMethod, mthcall, self.master") + "\n"
     s += returnLine(outtypes, False, asynchronous)
     s += "classdict['" + mthname +"'] = f"
 
@@ -196,10 +196,10 @@ def lValueSetString(name, intype):
             setstring += "    res = self.roc(self.stub.SetVector(mumax_pb2.VectorSet(mmobj=identifier, x=value[0], y=value[1], z=value[2])))\n"
 
         case "script.ScalarFunction":
-            setstring += "    self.roc(revcom.Operation(self.stub.SetScalarFunction, mumax_pb2.ScalarFunctionSet(mmobj=identifier, s=_makeScalarFunction(value, self)), self))\n"
+            setstring += "    revcom.sync_operate_manager(self.stub.SetScalarFunction, mumax_pb2.ScalarFunctionSet(mmobj=identifier, s=_makeScalarFunction(value, self)), self)\n"
 
         case "script.VectorFunction":
-            setstring += "    self.roc(revcom.Operation(self.stub.SetVectorFunction, mumax_pb2.VectorFunctionSet(mmobj=identifier, s=_makeVectorFunction(value, self)), self))\n"
+            setstring += "    revcom.sync_operate_manager(self.stub.SetVectorFunction, mumax_pb2.VectorFunctionSet(mmobj=identifier, s=_makeVectorFunction(value, self)), self)\n"
 
         case _: 
             setstring += "    if not hasattr(value, 'identifier'): raise TypeError('The value should be a mumax object here.')\n"
@@ -266,7 +266,7 @@ def fieldString(name, ftype, doc):
         case "float32" | "float64":
             getstring += "    res = self.master.roc(self.master.stub.GetFieldDouble(req)).s\n"
         case _:
-            getstring += "    res = toObj(self.master.roc(self.master.stub.GetFieldMumax(req)), '" + ftype + "', self.master)\n"
+            getstring += "    res = self.master.roc(toObj(self.master.roc(self.master.stub.GetFieldMumax(req)), '" + ftype + "', self.master))\n"
 
 
     getstring += "    return res\n"

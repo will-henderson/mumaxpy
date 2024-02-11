@@ -42,8 +42,18 @@ type py_quant struct {
 func (c *py_quant) EvalTo(dst *data.Slice) {
 	gpu_msg := getHandles(dst)
 	PyQuantRequest <- &pb.RevComQuantRequest{Funcno: int64(c.funcno), Sl: gpu_msg}
-	<-PyQuantDone[c.funcno]
-	return
+
+	//when this is called we are in the main goroutine.
+	//we would really like to free up the main goroutine here to allow other function calls in the meantime.
+	// what we could do is handle Execution in here
+
+	go returnwatcher(c.funcno)
+	HandleOtherCalls()
+}
+
+func returnwatcher(funcno int) {
+	<-PyQuantDone[funcno]
+	Inject <- InjectType{nil, -1}
 }
 
 func (c *py_quant) NComp() int { return c.ncomp }

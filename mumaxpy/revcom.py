@@ -38,7 +38,6 @@ class RevComQuantHandler():
 
     async def handler(self):
         async for request in self.requests:
-            print("WE HAVE a request!!!!")
             sl = request.sl
             shape = (sl.nx, sl.ny, sl.nz)
             dtype = np.dtype(np.float32)
@@ -52,7 +51,6 @@ class RevComQuantHandler():
                 self.pyquants[request.funcno](*dstarrs)
 
             yield mumax_pb2.NULL()
-
 
 
 async def Operation(operation, initialsend, master):
@@ -86,3 +84,39 @@ async def Operation(operation, initialsend, master):
             raise e #this is bad
 
     return result 
+
+##ok, on nested calls, e.g. when calling Mesh() or something, we don't want to start a reverse communication loop.
+
+def sync_operate_manager(operation, initialsend, master):
+
+    try:
+        task = asyncio.current_task()
+        if task is None:
+            istask = False
+        else:
+            istask = True
+    except RuntimeError:
+        istask = False
+
+    if not istask:
+        return master.roc(Operation(operation, initialsend, master))
+    else:
+        op = operation(initialsend)
+        return master.roc(operation(initialsend))
+    
+
+async def async_operate_manager(operation, initialsend, master):
+    
+    try:
+        task = asyncio.current_task()
+        if task is None:
+            istask = False
+        else:
+            istask = True
+    except RuntimeError:
+        istask = False
+
+    if not istask:
+        return await Operation(operation, initialsend, master)
+    else:
+        return await operation(initialsend)

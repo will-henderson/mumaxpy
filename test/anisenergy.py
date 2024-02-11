@@ -9,11 +9,14 @@ with mumaxpy.Mumax() as mm:
     mm.EnableDemag = False
     mm.Aex = 10e-12
 
-    mm.Msat = 1000e-3
+    mm.Msat = 1000e3
     mm.anisU = [0, 0, 1]
     mm.Ku1 = 1e6
 
     mm.m = mm.Uniform(1, 0, 0.1)
+
+    mm.TableAdd(mm.E_total)
+    mm.TableAutoSave(1e-12)
 
     E0 = mm.E_total.Get()
     mm.alpha = 1
