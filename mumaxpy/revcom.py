@@ -6,8 +6,6 @@ from numba import cuda
 from contextlib import ExitStack
 import numpy as np
 
-import cupy as cp ####
-
 ### General Reverse Communication Things ###
 
 class RCHBase:

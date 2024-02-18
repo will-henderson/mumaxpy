@@ -103,14 +103,14 @@ type py_sf struct {
 	func_no int
 }
 
-func (c *py_sf) Eval() interface{} {
+func (c *py_sf) Eval() interface{} { return c }
+
+func (c *py_sf) Type() reflect.Type { return script.ScalarFunction_t }
+func (c *py_sf) Float() float64 {
 	ScalarFunctionRequest <- c.func_no
 	return <-ScalarFunctionResults[c.func_no]
 }
-
-func (c *py_sf) Type() reflect.Type   { return script.ScalarFunction_t }
-func (c *py_sf) Float() float64       { return c.Eval().(float64) }
-func (c *py_sf) Child() []script.Expr { return nil }
+func (c *py_sf) Child() []script.Expr { return []script.Expr{en.World.Resolve("t")} }
 func (c *py_sf) Fix() script.Expr     { return c }
 
 type py_vf struct {
