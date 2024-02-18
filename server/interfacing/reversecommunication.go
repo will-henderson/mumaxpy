@@ -72,7 +72,7 @@ func VectorRevComRequester(stream pb.Mumax_ReverseCommunicationServer) error {
 	}
 }
 
-func (e *mumax) ReverseCommunication(stream pb.Mumax_ReverseCommunicationServer) error {
+func ReverseCommunication(stream pb.Mumax_ReverseCommunicationServer) error {
 
 	go ScalarRevComRequester(stream)
 	go VectorRevComRequester(stream)
@@ -111,7 +111,7 @@ func RevComQuantReceiver(stream pb.Mumax_ReverseCommunicationQuantitiesServer) e
 	}
 }
 
-func (e *mumax) ReverseCommunicationQuantities(stream pb.Mumax_ReverseCommunicationQuantitiesServer) error {
+func ReverseCommunicationQuantities(stream pb.Mumax_ReverseCommunicationQuantitiesServer) error {
 
 	go PyQuantRequester(stream)
 	err := RevComQuantReceiver(stream)

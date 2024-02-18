@@ -1,7 +1,6 @@
 package interfacing
 
 import (
-	"context"
 	"os"
 	"reflect"
 	"syscall"
@@ -13,7 +12,7 @@ import (
 
 const devShm = "/run/shm/"
 
-func (e *mumax) NewSlice(ctx context.Context, in *pb.Slice) (*pb.MumaxObject, error) {
+func NewSlice(in *pb.Slice) (*pb.MumaxObject, error) {
 	compsize := in.Nx * in.Ny * in.Nz * 4
 	totalsize := in.Ncomp * compsize
 

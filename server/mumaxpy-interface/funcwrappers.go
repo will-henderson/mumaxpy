@@ -1,14 +1,19 @@
-package mumaxpyinterface
+package main
 
 import (
+	"C"
+	"unsafe"
+
 	pb "github.com/will-henderson/mumaxpy/protocol"
 	mmif "github.com/will-henderson/mumaxpy/server/interfacing"
 	"google.golang.org/protobuf/proto"
 )
 
-func Eval(in []byte) (out []byte) {
+//export Eval
+func Eval(in *C.uchar, length C.int) (out []byte) {
+	in_bytes := (*[1 << 30]byte)(unsafe.Pointer(in))[:length:length]
 	cmd := &pb.STRING{}
-	proto.Unmarshal(in, cmd)
+	proto.Unmarshal(in_bytes, cmd)
 	res, _ := mmif.Eval(cmd)
 	out, _ = proto.Marshal(res)
 	return out
@@ -25,3 +30,5 @@ func GetIdentifiers() (out [][]byte) {
 	}
 
 }
+
+func main() {}

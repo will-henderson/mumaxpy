@@ -1,1 +1,1 @@
-package mumaxpyinterface
+package main
