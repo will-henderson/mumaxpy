@@ -117,14 +117,13 @@ type py_vf struct {
 	func_no int
 }
 
-func (c *py_vf) Eval() interface{} {
+func (c *py_vf) Eval() interface{}  { return c }
+func (c *py_vf) Type() reflect.Type { return script.VectorFunction_t }
+func (c *py_vf) Float3() data.Vector {
 	VectorFunctionRequest <- c.func_no
 	return <-VectorFunctionResults[c.func_no]
 }
-
-func (c *py_vf) Type() reflect.Type   { return script.VectorFunction_t }
-func (c *py_vf) Float3() data.Vector  { return c.Eval().(data.Vector) }
-func (c *py_vf) Child() []script.Expr { return nil }
+func (c *py_vf) Child() []script.Expr { return []script.Expr{en.World.Resolve("t")} }
 func (c *py_vf) Fix() script.Expr     { return c }
 
 type go_vf struct {
