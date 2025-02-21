@@ -53,9 +53,9 @@ RUN git clone https://github.com/will-henderson/mumaxpy.git
 RUN alias python='python3.11'
 RUN alias python3='python3.11'
 
-#RUN python3.11 -m pip install ./mumaxpy
+RUN python3.11 -m pip install ./mumaxpy
 
 WORKDIR "./mumaxpy/mumaxpy-server/"
-#RUN go install
+RUN go install
 
 
