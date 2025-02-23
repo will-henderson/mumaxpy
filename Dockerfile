@@ -1,4 +1,4 @@
-FROM nvidia/cuda:11.7.1-runtime-ubuntu20.04
+FROM nvidia/cuda:11.7.1-devel-ubuntu20.04
 LABEL Author="Aithericon <contact@aithericon.com>"
 LABEL Title="numpire worker"
 
@@ -40,7 +40,11 @@ RUN mkdir /Data1
 RUN mkdir /Data1/log
 ENV PYTHONPATH=/usr/local/lib/python3.11/dist-packages/
 
-ENV AGRIDOS_DATA=/Data1/
+ENV AGRIDOS_DATA=/Data1/ 
+ENV CUDA_HOME=/usr/local/cuda
+ENV LD_LIBRARY_PATH=/usr/local/cuda/lib64:${LD_LIBRARY_PATH}
+ENV NUMBAPRO_LIBDEVICE="/usr/local/cuda/nvvm/libdevice"
+ENV NUMBAPRO_NVVM="/usr/local/cuda/nvvm/bin"
 
 # Install go
 RUN wget https://go.dev/dl/go1.21.6.linux-amd64.tar.gz
@@ -50,8 +54,8 @@ WORKDIR "/installing_stuff"
 RUN git clone https://github.com/will-henderson/mumaxformumaxpy.git 3	
 RUN git clone https://github.com/will-henderson/mumaxpy.git
 
-RUN alias python='python3.11'
-RUN alias python3='python3.11'
+RUN ln -sf /usr/bin/python3.11 /usr/bin/python
+RUN ln -sf /usr/bin/python3.11 /usr/bin/python3
 
 RUN python3.11 -m pip install ./mumaxpy
 
