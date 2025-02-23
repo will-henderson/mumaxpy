@@ -1,7 +1,6 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"os"
 	"path"
@@ -33,7 +32,6 @@ type InjectResponseType struct {
 var InjectResponse [](chan InjectResponseType)
 
 func Run() {
-	flag.Parse()
 	cuda.Init(*en.Flag_gpu)
 	fmt.Println(cuda.GPUInfo)
 

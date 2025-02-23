@@ -47,6 +47,8 @@ class Mumax:
         cuda.select_device(gpu)
         args.append("-gpu")
         args.append(str(gpu))
+        args.append("-socket")
+        args.append(socket_address)
 
         for k, v in kwargs.items():
             args.append("-" + k)

@@ -12,7 +12,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-var socket_address = "mumaxpy.sock"
+var Flag_socket = flag.String("socket", "mumaxpy.sock", "socket address")
 
 type mumax struct {
 	pb.UnimplementedMumaxServer
@@ -23,8 +23,8 @@ func main() {
 
 	go Run()
 
-	os.Remove(socket_address)
-	listener, err := net.Listen("unix", socket_address)
+	os.Remove(*Flag_socket)
+	listener, err := net.Listen("unix", *Flag_socket)
 	if err != nil {
 		panic(err)
 	}
@@ -36,13 +36,13 @@ func main() {
 
 		en.Close()
 		listener.Close()
-		os.Remove(socket_address)
+		os.Remove(*Flag_socket)
 		os.Exit(0)
 	}()
 
 	defer en.Close()
 	defer listener.Close()
-	defer os.Remove(socket_address)
+	defer os.Remove(*Flag_socket)
 
 	grpcServer := grpc.NewServer(grpc.UnaryInterceptor(RecoveryUnaryInterceptor), grpc.StreamInterceptor(RecoveryStreamInterceptor))
 	server := &mumax{}
