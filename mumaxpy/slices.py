@@ -105,6 +105,7 @@ class DiscretisedFieldMM(df.Field):
         if asynchronous:
             def r(f):
                 return master.roc(f)
+        else:
             def r(f):
                 return f
 
@@ -124,9 +125,9 @@ class DiscretisedFieldMM(df.Field):
         else:
             unit = "?"
 
-        arr = r(self.NewSlice(dim, nx, ny, nz))
-        gpusl = r(self.ValueOf(quantity))
-        r(self.SliceCopy(arr, gpusl))
-        r(self.Recycle(gpusl))
+        arr = r(master.NewSlice(dim, nx, ny, nz))
+        gpusl = r(master.ValueOf(quantity))
+        r(master.SliceCopy(arr, gpusl))
+        r(master.Recycle(gpusl))
 
         super().__init__(ubermesh, dim, value=np.moveaxis(arr, 0, 3) , dtype=np.float32, units=unit)
