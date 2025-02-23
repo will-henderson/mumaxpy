@@ -58,6 +58,7 @@ RUN ln -sf /usr/bin/python3.11 /usr/bin/python
 RUN ln -sf /usr/bin/python3.11 /usr/bin/python3
 
 RUN python3.11 -m pip install ./mumaxpy
+RUN pip3 install jupyter_bokeh
 
 WORKDIR "./mumaxpy/mumaxpy-server/"
 RUN go install
