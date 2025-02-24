@@ -35,7 +35,8 @@ func main() {
 		sig := <-sigs
 		switch sig {
 		case os.Interrupt:
-		
+			println("Interrupted")
+			en.Break()
 		case syscall.SIGTERM:
 			en.Close()
 			listener.Close()

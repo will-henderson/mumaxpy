@@ -81,7 +81,7 @@ class Mumax:
 
         self._asynchronous = asynchronous
 
-        signal.signal(signal.SIGINT, self.close)
+        signal.signal(signal.SIGINT, lambda : self.server.send_signal(signal.SIGINT))
         signal.signal(signal.SIGTERM, self.close)
         atexit.register(self.close)
 
@@ -197,7 +197,7 @@ class Mumax:
 
     def close(self, sig=None, frame=None):
         
-        self.server.send_signal(signal.SIGINT)
+        self.server.send_signal(signal.SIGTERM)
         self.roc(self.channel.close())
         #os.remove(socket_address)
 
