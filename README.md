@@ -106,7 +106,7 @@ with mumaxpy.Mumax() as mm:
 
     mm.m = mm.Vortex(1, -1)
     show(mm.DiscretisedField(mm.m), "vortex")
-    ss
+    
     mm.m = mm.TwoDomain(1,0,0,  0,1,0,  -1,0,0)
     show(mm.DiscretisedField(mm.m), "twodomain")
     
