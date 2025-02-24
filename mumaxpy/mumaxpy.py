@@ -92,7 +92,7 @@ class Mumax:
 
         if not Mumax._initialised_methods:
             self.roc(self._populate_functions(asynchronous))
-            Mumax._initialised_methods = True
+            #Mumax._initialised_methods = True ### this doesn't work. The methods aren't attached to the class
 
         self.scalarpyfuncs = []
         self.vectorpyfuncs = []
@@ -143,12 +143,12 @@ class Mumax:
                 nx, ny, nz = mesh.Size()
 
                 if not gpu:
-                    arr = self.NewSlice(dim, nx, ny, nz, gpu)
+                    arr = self.NewSlice(dim, nx, ny, nz, False)
                     gpusl = self.ValueOf(quantity)
                     self.SliceCopy(arr, gpusl)
                     self.Recycle(gpusl)
                 else:
-                    arr = self.NewSlice(dim, nx, ny, nz, gpu)
+                    arr = self.NewSlice(dim, nx, ny, nz, True)
                     quantity.EvalTo(arr)
 
                 return arr
@@ -169,13 +169,13 @@ class Mumax:
                 nx, ny, nz = await mesh.Size()
 
                 if not gpu:
-                    arr = await self.NewSlice(dim, nx, ny, nz, gpu)
+                    arr = await self.NewSlice(dim, nx, ny, nz, False)
                     gpusl = await self.ValueOf(quantity)
                     await self.SliceCopy(arr, gpusl)
                     await self.Recycle(gpusl)
                 else:
-                    arr = self.NewSlice(dim, nx, ny, nz, gpu)
-                    quantity.EvalTo(arr)
+                    arr = await self.NewSlice(dim, nx, ny, nz, True)
+                    await quantity.EvalTo(arr)
 
                 return arr
 

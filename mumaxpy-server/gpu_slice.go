@@ -13,9 +13,9 @@ import (
 
 //#cgo CFLAGS: -I /usr/include
 //#cgo LDFLAGS: -L/usr/lib/x86_64-linux-gnu -lcuda -lcudart
-//// DOCKER IMAGE
-//#cgo CFLAGS: -I /usr/local/cuda-11.7/targets/x86_64-linux/include/
-//#cgo LDFLAGS:-L /usr/local/cuda-11.7/targets/x86_64-linux/lib/
+//// DOCKER IMAGE 
+//#cgo CFLAGS: -I /usr/local/cuda/targets/x86_64-linux/include/
+//#cgo LDFLAGS:-L /usr/local/cuda/targets/x86_64-linux/lib/
 //#include "gpu_slice.h"
 import "C"
 

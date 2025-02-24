@@ -45,7 +45,8 @@ func (c *py_quant) EvalTo(dst *data.Slice) {
 
 	//when this is called we are in the main goroutine.
 	//we would really like to free up the main goroutine here to allow other function calls in the meantime.
-	// what we could do is handle Execution in here
+	//this is necessary because the python code may want to call other things, e.g. mm.m.Mesh() to get info it needs
+	// HandleOtherCalls allows this to happen.
 
 	go returnwatcher(c.funcno)
 	HandleOtherCalls()

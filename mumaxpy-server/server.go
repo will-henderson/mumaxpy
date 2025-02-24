@@ -32,12 +32,16 @@ func main() {
 	sigs := make(chan os.Signal, 10)
 	signal.Notify(sigs, os.Interrupt, syscall.SIGTERM)
 	go func() {
-		<-sigs
-
-		en.Close()
-		listener.Close()
-		os.Remove(*Flag_socket)
-		os.Exit(0)
+		sig := <-sigs
+		switch sig {
+		case os.Interrupt:
+		
+		case syscall.SIGTERM:
+			en.Close()
+			listener.Close()
+			os.Remove(*Flag_socket)
+			os.Exit(0)
+		}
 	}()
 
 	defer en.Close()

@@ -14,8 +14,6 @@ func (e *mumax) GetIdentifiers(in *pb.NULL, stream pb.Mumax_GetIdentifiersServer
 	identifiers := en.World.Identifiers
 	docs := en.World.Doc
 
-	//documentation := NewDocumentation() now storing this as a global.
-
 	for key, doc := range docs {
 
 		element := identifiers[strings.ToLower(key)]
